@@ -1,0 +1,421 @@
+---
+title: "Events API"
+description: "API endpoints for club events and showings"
+---
+
+## List Events
+
+<CodeGroup>
+```bash GET /api/events/
+List all upcoming events across all clubs
+```
+</CodeGroup>
+
+### Authentication
+Optional - unauthenticated users may have limited access to event details
+
+### Query Parameters
+
+<ParamField query="search" type="string">
+  Search events by name or description
+</ParamField>
+
+<ParamField query="club__code" type="string">
+  Filter events by club code
+</ParamField>
+
+<ParamField query="type" type="integer">
+  Filter by event type (0=Other, 1=Recruitment, 2=GBM, 3=Speaker, 4=Fair, 5=Social, 6=Career)
+</ParamField>
+
+<ParamField query="earliest_start_time" type="datetime">
+  Filter events starting after this time (format: YYYY-MM-DDTHH:MM:SSZ)
+</ParamField>
+
+<ParamField query="latest_start_time" type="datetime">
+  Filter events starting before this time
+</ParamField>
+
+<ParamField query="earliest_end_time" type="datetime">
+  Filter events ending after this time
+</ParamField>
+
+<ParamField query="latest_end_time" type="datetime">
+  Filter events ending before this time
+</ParamField>
+
+<ParamField query="fair" type="integer">
+  Filter events for a specific club fair by fair ID
+</ParamField>
+
+### Response Fields
+
+<ResponseField name="id" type="integer" required>
+  Event ID
+</ResponseField>
+
+<ResponseField name="name" type="string" required>
+  Event name
+</ResponseField>
+
+<ResponseField name="description" type="string">
+  Event description (HTML)
+</ResponseField>
+
+<ResponseField name="club" type="string">
+  Club code hosting the event
+</ResponseField>
+
+<ResponseField name="club_name" type="string">
+  Club name
+</ResponseField>
+
+<ResponseField name="type" type="integer">
+  Event type (0-6)
+</ResponseField>
+
+<ResponseField name="url" type="string">
+  Event URL (e.g., Zoom link)
+</ResponseField>
+
+<ResponseField name="image_url" type="string">
+  Event image/flyer URL
+</ResponseField>
+
+<ResponseField name="large_image_url" type="string">
+  Full-size event image URL
+</ResponseField>
+
+<ResponseField name="ticketed" type="boolean">
+  Whether event requires tickets
+</ResponseField>
+
+<ResponseField name="pinned" type="boolean">
+  Whether event is pinned/featured
+</ResponseField>
+
+<ResponseField name="showings" type="array">
+  Array of event showing times
+</ResponseField>
+
+<ResponseField name="earliest_start_time" type="datetime">
+  Earliest showing start time
+</ResponseField>
+
+<ResponseField name="latest_start_time" type="datetime">
+  Latest showing start time
+</ResponseField>
+
+<ResponseField name="earliest_end_time" type="datetime">
+  Earliest showing end time
+</ResponseField>
+
+<ResponseField name="latest_end_time" type="datetime">
+  Latest showing end time
+</ResponseField>
+
+<ResponseField name="badges" type="array">
+  Club badges
+</ResponseField>
+
+### Event Showing Fields
+
+<ResponseField name="id" type="integer">
+  Showing ID
+</ResponseField>
+
+<ResponseField name="start_time" type="datetime">
+  Showing start time
+</ResponseField>
+
+<ResponseField name="end_time" type="datetime">
+  Showing end time
+</ResponseField>
+
+<ResponseField name="location" type="string">
+  Event location (null if hidden from public)
+</ResponseField>
+
+<ResponseField name="location_visible_to_public" type="boolean">
+  Whether location is visible to unauthenticated users
+</ResponseField>
+
+<ResponseField name="ticketed" type="boolean">
+  Whether this showing requires tickets
+</ResponseField>
+
+### Example Request
+
+```bash
+curl "https://pennclubs.com/api/events/?type=1&earliest_start_time=2024-01-01T00:00:00Z"
+```
+
+### Example Response
+
+```json
+{
+  "count": 42,
+  "next": null,
+  "previous": null,
+  "results": [
+    {
+      "id": 123,
+      "name": "Fall Recruitment Info Session",
+      "description": "<p>Learn about joining our team!</p>",
+      "club": "pppjo",
+      "club_name": "Penn Labs",
+      "type": 1,
+      "url": "https://zoom.us/j/123456789",
+      "image_url": "https://pennclubs.com/media/events/123.png",
+      "ticketed": false,
+      "pinned": true,
+      "showings": [
+        {
+          "id": 456,
+          "start_time": "2024-09-15T18:00:00Z",
+          "end_time": "2024-09-15T19:30:00Z",
+          "location": "Towne 100",
+          "location_visible_to_public": true,
+          "ticketed": false
+        }
+      ],
+      "earliest_start_time": "2024-09-15T18:00:00Z",
+      "latest_end_time": "2024-09-15T19:30:00Z"
+    }
+  ]
+}
+```
+
+---
+
+## Get Event Details
+
+<CodeGroup>
+```bash GET /api/events/{id}/
+Retrieve detailed information about a specific event
+```
+</CodeGroup>
+
+### Path Parameters
+
+<ParamField path="id" type="integer" required>
+  Event ID
+</ParamField>
+
+### Response
+
+Same fields as list endpoint
+
+### Example Request
+
+```bash
+curl https://pennclubs.com/api/events/123/
+```
+
+---
+
+## Club Events
+
+<CodeGroup>
+```bash GET /api/clubs/{club_code}/events/
+List events for a specific club
+```
+</CodeGroup>
+
+### Authentication
+Required - must have access to the club
+
+### Path Parameters
+
+<ParamField path="club_code" type="string" required>
+  Club code identifier
+</ParamField>
+
+### Response
+
+Array of event objects (same fields as event list endpoint)
+
+### Example Request
+
+```bash
+curl https://pennclubs.com/api/clubs/pppjo/events/ \
+  -H "Authorization: Bearer YOUR_TOKEN"
+```
+
+---
+
+## Create Event
+
+<CodeGroup>
+```bash POST /api/clubs/{club_code}/events/
+Create a new event for a club
+```
+</CodeGroup>
+
+### Authentication
+Required - must be club officer or owner
+
+### Path Parameters
+
+<ParamField path="club_code" type="string" required>
+  Club code identifier
+</ParamField>
+
+### Request Body
+
+<ParamField body="name" type="string" required>
+  Event name
+</ParamField>
+
+<ParamField body="description" type="string">
+  Event description (HTML allowed)
+</ParamField>
+
+<ParamField body="type" type="integer">
+  Event type (0=Other, 1=Recruitment, 2=GBM, 3=Speaker, 4=Fair, 5=Social, 6=Career)
+</ParamField>
+
+<ParamField body="url" type="string">
+  Event URL (meeting link, registration, etc.)
+</ParamField>
+
+<ParamField body="image" type="file">
+  Event flyer/image
+</ParamField>
+
+### Example Request
+
+```bash
+curl -X POST https://pennclubs.com/api/clubs/pppjo/events/ \
+  -H "Authorization: Bearer YOUR_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "Workshop: Intro to React",
+    "description": "<p>Learn React fundamentals</p>",
+    "type": 2,
+    "url": "https://zoom.us/j/123456789"
+  }'
+```
+
+---
+
+## Update Event
+
+<CodeGroup>
+```bash PATCH /api/clubs/{club_code}/events/{id}/
+Update an existing event
+```
+</CodeGroup>
+
+### Authentication
+Required - must be club officer or owner
+
+### Path Parameters
+
+<ParamField path="club_code" type="string" required>
+  Club code identifier
+</ParamField>
+
+<ParamField path="id" type="integer" required>
+  Event ID
+</ParamField>
+
+### Request Body
+
+Same fields as create endpoint (all optional for PATCH)
+
+---
+
+## Delete Event
+
+<CodeGroup>
+```bash DELETE /api/clubs/{club_code}/events/{id}/
+Delete an event
+```
+</CodeGroup>
+
+### Authentication
+Required - must be club officer or owner
+
+### Path Parameters
+
+<ParamField path="club_code" type="string" required>
+  Club code identifier
+</ParamField>
+
+<ParamField path="id" type="integer" required>
+  Event ID
+</ParamField>
+
+---
+
+## Event Showings
+
+<CodeGroup>
+```bash GET /api/events/{event_id}/showings/
+List showings for an event
+```
+</CodeGroup>
+
+### Path Parameters
+
+<ParamField path="event_id" type="integer" required>
+  Event ID
+</ParamField>
+
+### Response
+
+Array of event showing objects
+
+---
+
+## Create Event Showing
+
+<CodeGroup>
+```bash POST /api/clubs/{club_code}/events/{event_id}/showings/
+Create a showing/occurrence for an event
+```
+</CodeGroup>
+
+### Authentication
+Required - must be club officer or owner
+
+### Request Body
+
+<ParamField body="start_time" type="datetime" required>
+  Showing start time (ISO 8601 format)
+</ParamField>
+
+<ParamField body="end_time" type="datetime" required>
+  Showing end time
+</ParamField>
+
+<ParamField body="location" type="string">
+  Event location
+</ParamField>
+
+<ParamField body="location_visible_to_public" type="boolean">
+  Whether to show location to unauthenticated users (default: false)
+</ParamField>
+
+<ParamField body="ticket_drop_time" type="datetime">
+  When tickets become available (for ticketed events)
+</ParamField>
+
+<ParamField body="ticket_order_limit" type="integer">
+  Maximum tickets per order (default: 10)
+</ParamField>
+
+### Example Request
+
+```bash
+curl -X POST https://pennclubs.com/api/clubs/pppjo/events/123/showings/ \
+  -H "Authorization: Bearer YOUR_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "start_time": "2024-09-15T18:00:00Z",
+    "end_time": "2024-09-15T19:30:00Z",
+    "location": "Towne 100",
+    "location_visible_to_public": true
+  }'
+```

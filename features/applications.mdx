@@ -1,0 +1,307 @@
+---
+title: Applications
+description: Build custom application forms for recruiting members with questions, committees, and submission management
+---
+
+Penn Clubs provides a powerful application system that allows clubs to create custom recruitment applications, manage submissions, and make selections.
+
+## Creating Applications
+
+Club officers can build comprehensive application forms with multiple question types and committee options.
+
+### Application Settings
+
+<Steps>
+  <Step title="Basic Information">
+    Set application name, description, and external URL (if using external forms)
+  </Step>
+  
+  <Step title="Timeline">
+    Configure application start time, end time, and result release date
+  </Step>
+  
+  <Step title="Application Cycle">
+    Optionally link to an application cycle (Fall 2024, Spring 2025, etc.)
+  </Step>
+  
+  <Step title="Activate">
+    Mark the application as active to make it visible to students
+  </Step>
+</Steps>
+
+### Application Timeframes
+
+- **Application Start** - When students can begin submitting
+- **Application End** - Submission deadline
+- **End Time Exception** - Allow specific extensions for individual students
+- **Result Release** - When decisions are published to applicants
+
+<Note>
+  Set result release dates carefully - students will be able to see their decision status after this time.
+</Note>
+
+## Committees
+
+Applications support multiple committees for organizational structure:
+
+- **General Member** - Default committee for broad recruitment
+- **Custom committees** - Create specific tracks (Design, Marketing, Finance, etc.)
+- **Committee-specific questions** - Assign questions to specific committees
+- **Multiple applications** - Students can apply to multiple committees
+
+### Committee Features
+
+<Card title="Word Limits" icon="file-text">
+  Set total word limits per committee to ensure fair response lengths
+</Card>
+
+<Card title="Question Assignment" icon="link">
+  Assign specific questions to specific committees or make them universal
+</Card>
+
+<Card title="Separate Submissions" icon="users">
+  Each committee receives separate submissions for independent review
+</Card>
+
+## Question Types
+
+Build applications with four different question types:
+
+### Free Response
+
+Long-form essay questions:
+
+- **Word limit enforcement** (optional)
+- **Rich text description** for question prompt
+- **Precedence ordering** for question sequence
+- **Committee targeting** - show to specific committees
+
+### Multiple Choice
+
+Select one option from a list:
+
+- **Custom options** - Add as many choices as needed
+- **Pre-defined selections** for standardized questions
+- **Used for** classification questions (year, school, etc.)
+
+### Short Answer
+
+Brief text responses:
+
+- **Character limits** (shorter than free response)
+- **Quick information gathering** (name, email, phone, etc.)
+- **Auto-populate** from user profile when possible
+
+### Informational Text
+
+Display information to applicants:
+
+- **No response required**
+- **Explain requirements** or provide context
+- **Format instructions** or expectations
+- **Can include rich text** with links and formatting
+
+## Building the Application Form
+
+<Steps>
+  <Step title="Add Questions">
+    Create questions in your desired order with precedence values
+  </Step>
+  
+  <Step title="Set Word Limits">
+    Configure word limits for free response questions
+  </Step>
+  
+  <Step title="Assign to Committees">
+    Mark questions as committee-specific or general
+  </Step>
+  
+  <Step title="Add Info Text">
+    Include instructions and expectations throughout the form
+  </Step>
+  
+  <Step title="Preview and Test">
+    Review the application as students will see it
+  </Step>
+</Steps>
+
+## Student Submission Flow
+
+When students apply to clubs:
+
+<Steps>
+  <Step title="Select Committee">
+    Choose which committee(s) to apply for
+  </Step>
+  
+  <Step title="Auto-Populate Data">
+    Basic profile information fills in automatically
+  </Step>
+  
+  <Step title="Answer Questions">
+    Complete all required questions with word limit tracking
+  </Step>
+  
+  <Step title="Submit Application">
+    Submit with confirmation notification
+  </Step>
+  
+  <Step title="View Status">
+    Check application status and decisions after release date
+  </Step>
+</Steps>
+
+### Application Features for Students
+
+- **Save progress** - Applications auto-save as students type
+- **Word count indicators** - Real-time tracking of word limits
+- **Multiple submissions** - Apply to different committees
+- **Submission confirmation** - Email receipt upon submission
+- **Status tracking** - View pending/accepted/rejected status
+
+<Note>
+  Students can view all their applications and their status in their profile settings.
+</Note>
+
+## Reviewing Submissions
+
+Club officers can review and manage applications:
+
+### Submission Management
+
+- **View all submissions** by committee
+- **Filter by status** (Pending, Accepted, Rejected after written, Rejected after interview)
+- **Read responses** to all questions
+- **See applicant information** (name, year, school, major)
+- **Export to Excel** for offline review
+
+### Decision Statuses
+
+<Card title="Pending" icon="clock">
+  Initial status - application received and under review
+</Card>
+
+<Card title="Accepted" icon="check">
+  Student accepted to the club/committee
+</Card>
+
+<Card title="Rejected After Written" icon="x">
+  Not moving forward after written application review
+</Card>
+
+<Card title="Rejected After Interview" icon="x">
+  Not accepted after interview round
+</Card>
+
+## Application Extensions
+
+Grant extensions to individual students:
+
+- **Create extension** with new deadline
+- **Automatic email notification** to student
+- **Override application end time** for specific users
+- **Track extended deadlines** separately
+
+<Note>
+  Extensions are useful for students with extenuating circumstances or to accommodate interview schedules.
+</Note>
+
+## Decision Notifications
+
+Notify applicants of their results:
+
+### Acceptance Emails
+
+- **Custom acceptance message** with club-specific text
+- **Template variables** - Include {name}, {reason}, {committee}
+- **Automatic sending** when status changes to Accepted
+- **One-time notification** (notified flag prevents duplicates)
+
+### Rejection Emails
+
+- **Custom rejection message** with feedback
+- **Template variables** for personalization  
+- **Respectful, encouraging tone**
+- **Automatic sending** when status changes to Rejected
+
+### Email Templates
+
+Configure custom email templates:
+
+```
+Hi {name},
+
+Congratulations! We're excited to inform you that you've been 
+accepted to {committee}.
+
+{reason}
+
+We look forward to having you as part of our team!
+```
+
+<Note>
+  Use template variables {name}, {reason}, and {committee} to personalize emails. The system validates templates before saving.
+</Note>
+
+## Wharton Council Applications
+
+Special features for Wharton Council clubs:
+
+- **Application cycles** - Centralized Fall/Spring cycles
+- **Status tracking** - View all Wharton applications
+- **Coordinated timelines** - Synchronized deadlines
+- **Public application page** - Browse all open Wharton applications
+
+## Cloning Applications
+
+Reuse applications from previous cycles:
+
+- **Clone entire applications** with questions and committees
+- **Update dates** for new cycle
+- **Normalize committees** - Removes "copy" suffixes
+- **Preserve structure** while allowing modifications
+
+<Steps>
+  <Step title="Select Previous Application">
+    Choose an application from a past cycle
+  </Step>
+  
+  <Step title="Clone and Update">
+    System creates a copy with all questions and committees
+  </Step>
+  
+  <Step title="Modify Dates">
+    Update start, end, and release dates for new cycle
+  </Step>
+  
+  <Step title="Review Questions">
+    Make any necessary changes to questions
+  </Step>
+  
+  <Step title="Activate">
+    Set as active when ready to accept submissions
+  </Step>
+</Steps>
+
+## Analytics and Reporting
+
+Track application metrics:
+
+- **Submission counts** by committee
+- **Completion rates** - Started vs. submitted
+- **Average word counts** per question
+- **Time to complete** statistics
+- **Acceptance rates** by committee
+
+## External Applications
+
+If using external forms (Google Forms, Typeform, etc.):
+
+- **Add external URL** to application settings
+- **Display link** prominently on club page
+- **Track clicks** to external form
+- **Maintain Penn Clubs presence** while using external tools
+
+<Note>
+  External applications are useful for clubs that need features not available in the built-in system, but built-in applications provide better integration and analytics.
+</Note>

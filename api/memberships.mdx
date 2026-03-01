@@ -1,0 +1,477 @@
+---
+title: "Memberships API"
+description: "API endpoints for managing club memberships and member roles"
+---
+
+## List User Memberships
+
+<CodeGroup>
+```bash GET /api/memberships/
+List all clubs the authenticated user is a member of
+```
+</CodeGroup>
+
+### Authentication
+Required
+
+### Response Fields
+
+<ResponseField name="club_code" type="string" required>
+  Club code identifier
+</ResponseField>
+
+<ResponseField name="role" type="integer" required>
+  Membership role (0=Owner, 10=Officer, 20=Member)
+</ResponseField>
+
+<ResponseField name="username" type="string">
+  User's username
+</ResponseField>
+
+### Example Request
+
+```bash
+curl https://pennclubs.com/api/memberships/ \
+  -H "Authorization: Bearer YOUR_TOKEN"
+```
+
+### Example Response
+
+```json
+[
+  {
+    "club_code": "pppjo",
+    "role": 10,
+    "username": "johndoe"
+  },
+  {
+    "club_code": "tech-club",
+    "role": 20,
+    "username": "johndoe"
+  }
+]
+```
+
+---
+
+## List Club Members
+
+<CodeGroup>
+```bash GET /api/clubs/{club_code}/members/
+List all members of a specific club
+```
+</CodeGroup>
+
+### Authentication
+Required
+
+### Path Parameters
+
+<ParamField path="club_code" type="string" required>
+  Club code identifier
+</ParamField>
+
+### Response Fields
+
+<ResponseField name="name" type="string">
+  Member's full name ("Anonymous" if public=false)
+</ResponseField>
+
+<ResponseField name="username" type="string">
+  Member's username (null if public=false)
+</ResponseField>
+
+<ResponseField name="email" type="string">
+  Member's email (visible to club officers only)
+</ResponseField>
+
+<ResponseField name="role" type="integer" required>
+  Membership role (0=Owner, 10=Officer, 20=Member)
+</ResponseField>
+
+<ResponseField name="title" type="string">
+  Custom member title/position (e.g., "President", "Tech Lead")
+</ResponseField>
+
+<ResponseField name="description" type="string">
+  Member bio/description (max 1000 characters)
+</ResponseField>
+
+<ResponseField name="public" type="boolean">
+  Whether membership is publicly visible
+</ResponseField>
+
+<ResponseField name="active" type="boolean">
+  Whether member is currently active
+</ResponseField>
+
+<ResponseField name="image" type="string">
+  URL to member's profile image
+</ResponseField>
+
+### Example Request
+
+```bash
+curl https://pennclubs.com/api/clubs/pppjo/members/ \
+  -H "Authorization: Bearer YOUR_TOKEN"
+```
+
+### Example Response
+
+```json
+[
+  {
+    "name": "John Doe",
+    "username": "johndoe",
+    "email": "john@upenn.edu",
+    "role": 0,
+    "title": "President",
+    "description": "Passionate about building great products",
+    "public": true,
+    "active": true,
+    "image": "https://pennclubs.com/media/membership/pppjo.johndoe.png"
+  },
+  {
+    "name": "Anonymous",
+    "username": null,
+    "email": null,
+    "role": 20,
+    "title": "Member",
+    "description": "",
+    "public": false,
+    "active": true,
+    "image": null
+  }
+]
+```
+
+---
+
+## Add Club Member
+
+<CodeGroup>
+```bash POST /api/clubs/{club_code}/members/
+Add a new member to a club
+```
+</CodeGroup>
+
+### Authentication
+Required - must be club officer or owner
+
+### Path Parameters
+
+<ParamField path="club_code" type="string" required>
+  Club code identifier
+</ParamField>
+
+### Request Body
+
+<ParamField body="person" type="integer" required>
+  User ID of the person to add
+</ParamField>
+
+<ParamField body="role" type="integer">
+  Membership role (0=Owner, 10=Officer, 20=Member, default: 20)
+</ParamField>
+
+<ParamField body="title" type="string">
+  Custom title/position
+</ParamField>
+
+<ParamField body="public" type="boolean">
+  Make membership publicly visible (default: true)
+</ParamField>
+
+<ParamField body="active" type="boolean">
+  Set member as active (default: true)
+</ParamField>
+
+### Example Request
+
+```bash
+curl -X POST https://pennclubs.com/api/clubs/pppjo/members/ \
+  -H "Authorization: Bearer YOUR_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "person": 12345,
+    "role": 20,
+    "title": "New Member",
+    "public": true,
+    "active": true
+  }'
+```
+
+---
+
+## Update Member
+
+<CodeGroup>
+```bash PATCH /api/clubs/{club_code}/members/{id}/
+Update a member's role or information
+```
+</CodeGroup>
+
+### Authentication
+Required - must be club officer or owner to change role; members can update their own public/active status
+
+### Path Parameters
+
+<ParamField path="club_code" type="string" required>
+  Club code identifier
+</ParamField>
+
+<ParamField path="id" type="integer" required>
+  Membership ID
+</ParamField>
+
+### Request Body
+
+<ParamField body="role" type="integer">
+  New membership role (officers only, cannot promote above own role)
+</ParamField>
+
+<ParamField body="title" type="string">
+  Custom title/position (officers only)
+</ParamField>
+
+<ParamField body="description" type="string">
+  Member bio/description (officers only, max 1000 chars)
+</ParamField>
+
+<ParamField body="public" type="boolean">
+  Make membership publicly visible (member can change own)
+</ParamField>
+
+<ParamField body="active" type="boolean">
+  Set member as active/inactive (member can change own)
+</ParamField>
+
+### Example Request
+
+```bash
+curl -X PATCH https://pennclubs.com/api/clubs/pppjo/members/789/ \
+  -H "Authorization: Bearer YOUR_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "role": 10,
+    "title": "Vice President"
+  }'
+```
+
+---
+
+## Remove Member
+
+<CodeGroup>
+```bash DELETE /api/clubs/{club_code}/members/{id}/
+Remove a member from a club
+```
+</CodeGroup>
+
+### Authentication
+Required - must be club officer or owner, or the member themselves
+
+### Path Parameters
+
+<ParamField path="club_code" type="string" required>
+  Club code identifier
+</ParamField>
+
+<ParamField path="id" type="integer" required>
+  Membership ID
+</ParamField>
+
+### Example Request
+
+```bash
+curl -X DELETE https://pennclubs.com/api/clubs/pppjo/members/789/ \
+  -H "Authorization: Bearer YOUR_TOKEN"
+```
+
+---
+
+## Membership Requests
+
+<CodeGroup>
+```bash GET /api/clubs/{club_code}/membershiprequests/
+List pending membership requests for a club
+```
+</CodeGroup>
+
+### Authentication
+Required - must be club officer or owner
+
+### Path Parameters
+
+<ParamField path="club_code" type="string" required>
+  Club code identifier
+</ParamField>
+
+### Response Fields
+
+<ResponseField name="name" type="string">
+  Requester's full name
+</ResponseField>
+
+<ResponseField name="username" type="string">
+  Requester's username
+</ResponseField>
+
+<ResponseField name="email" type="string">
+  Requester's email
+</ResponseField>
+
+<ResponseField name="club" type="string">
+  Club code
+</ResponseField>
+
+<ResponseField name="created_at" type="datetime">
+  When request was created
+</ResponseField>
+
+<ResponseField name="school" type="array">
+  Requester's schools
+</ResponseField>
+
+<ResponseField name="major" type="array">
+  Requester's majors
+</ResponseField>
+
+<ResponseField name="graduation_year" type="integer">
+  Requester's graduation year
+</ResponseField>
+
+### Example Request
+
+```bash
+curl https://pennclubs.com/api/clubs/pppjo/membershiprequests/ \
+  -H "Authorization: Bearer YOUR_TOKEN"
+```
+
+---
+
+## Create Membership Request
+
+<CodeGroup>
+```bash POST /api/requests/membership/
+Request to join a club
+```
+</CodeGroup>
+
+### Authentication
+Required
+
+### Request Body
+
+<ParamField body="club" type="string" required>
+  Club code to request membership in
+</ParamField>
+
+### Example Request
+
+```bash
+curl -X POST https://pennclubs.com/api/requests/membership/ \
+  -H "Authorization: Bearer YOUR_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"club": "pppjo"}'
+```
+
+---
+
+## Accept/Reject Membership Request
+
+<CodeGroup>
+```bash DELETE /api/clubs/{club_code}/membershiprequests/{id}/
+Reject a membership request
+```
+</CodeGroup>
+
+### Authentication
+Required - must be club officer or owner
+
+### Path Parameters
+
+<ParamField path="club_code" type="string" required>
+  Club code identifier
+</ParamField>
+
+<ParamField path="id" type="integer" required>
+  Membership request ID
+</ParamField>
+
+To accept a request, create a membership with the user's ID instead.
+
+### Example Request
+
+```bash
+curl -X DELETE https://pennclubs.com/api/clubs/pppjo/membershiprequests/456/ \
+  -H "Authorization: Bearer YOUR_TOKEN"
+```
+
+---
+
+## Member Invites
+
+<CodeGroup>
+```bash POST /api/clubs/{club_code}/invites/
+Invite someone to join the club via email
+```
+</CodeGroup>
+
+### Authentication
+Required - must be club officer or owner
+
+### Path Parameters
+
+<ParamField path="club_code" type="string" required>
+  Club code identifier
+</ParamField>
+
+### Request Body
+
+<ParamField body="email" type="string" required>
+  Email address to send invitation to
+</ParamField>
+
+<ParamField body="role" type="integer">
+  Role to grant when invite is accepted (default: 20)
+</ParamField>
+
+<ParamField body="title" type="string">
+  Custom title for the member
+</ParamField>
+
+### Response Fields
+
+<ResponseField name="id" type="string">
+  Unique invite ID
+</ResponseField>
+
+<ResponseField name="email" type="string">
+  Email address invited
+</ResponseField>
+
+<ResponseField name="role" type="integer">
+  Role that will be granted
+</ResponseField>
+
+<ResponseField name="title" type="string">
+  Member title
+</ResponseField>
+
+<ResponseField name="updated_at" type="datetime">
+  Last update time
+</ResponseField>
+
+### Example Request
+
+```bash
+curl -X POST https://pennclubs.com/api/clubs/pppjo/invites/ \
+  -H "Authorization: Bearer YOUR_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "email": "newmember@upenn.edu",
+    "role": 20,
+    "title": "Member"
+  }'
+```

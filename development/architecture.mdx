@@ -1,0 +1,379 @@
+---
+title: System Architecture
+description: Technical architecture and design overview of Penn Clubs
+---
+
+Penn Clubs is a full-stack web application built with a modern, decoupled architecture featuring a Django REST API backend and a Next.js React frontend.
+
+## Architecture Overview
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                        Frontend                             │
+│                                                             │
+│  Next.js 15 + React 19 + TypeScript                        │
+│  - Server-side rendering (SSR)                             │
+│  - Client-side routing                                      │
+│  - Bulma CSS framework                                      │
+│  - Google Maps integration                                  │
+└─────────────────┬───────────────────────────────────────────┘
+                  │
+                  │ HTTP/REST API
+                  │
+┌─────────────────▼───────────────────────────────────────────┐
+│                        Backend                              │
+│                                                             │
+│  Django 5 + Django REST Framework                          │
+│  - REST API endpoints                                       │
+│  - Authentication & authorization                           │
+│  - Business logic                                           │
+│  - WebSocket support (Django Channels)                     │
+└─────────────────┬───────────────────────────────────────────┘
+                  │
+        ┌─────────┼─────────┬─────────────┐
+        │         │         │             │
+┌───────▼──┐  ┌──▼─────┐  ┌▼────────┐  ┌▼──────────┐
+│PostgreSQL│  │ Redis  │  │   S3    │  │CyberSource│
+│          │  │        │  │         │  │           │
+│ Primary  │  │ Cache  │  │  File   │  │  Payment  │
+│   DB     │  │Channels│  │ Storage │  │ Processing│
+└──────────┘  └────────┘  └─────────┘  └───────────┘
+```
+
+## Frontend Architecture
+
+### Technology Stack
+
+- **Framework**: Next.js 15.2.7 with React 19.2.2
+- **Language**: TypeScript 5.5.4
+- **Styling**: Bulma CSS framework with Emotion
+- **State Management**: React hooks and context
+- **HTTP Client**: Isomorphic Unfetch
+- **Maps**: React Google Maps API
+- **Forms**: Formik for form handling
+- **Rich Text**: Draft.js and React Draft WYSIWYG
+- **Package Manager**: Bun (supports npm/yarn as alternatives)
+
+### Key Frontend Features
+
+#### Server-Side Rendering (SSR)
+
+Next.js provides server-side rendering for improved SEO and initial page load performance. Pages are rendered on the server and hydrated on the client.
+
+#### Component Structure
+
+```
+frontend/
+├── pages/           # Next.js page routes
+├── components/      # Reusable React components
+├── constants/       # Constants and configuration
+├── cypress/         # Integration tests
+└── public/          # Static assets
+```
+
+#### Proxy Configuration
+
+The frontend proxies API requests to the backend:
+- **Development**: `http://localhost:8000/`
+- **Production**: Configured via `DOMAIN` environment variable
+
+### Multi-Brand Support
+
+Penn Clubs supports multiple brands through the `NEXT_PUBLIC_SITE_NAME` environment variable:
+- `clubs` - Penn Clubs (default)
+- `fyh` - Hub@Penn
+
+This variable controls branding, styling, and feature availability throughout the application.
+
+## Backend Architecture
+
+### Technology Stack
+
+- **Framework**: Django 5
+- **API**: Django REST Framework
+- **Database**: PostgreSQL (via psycopg2)
+- **Cache**: Redis (django-redis)
+- **WebSockets**: Django Channels with channels-redis
+- **Task Queue**: Channels for async operations
+- **File Storage**: AWS S3 (django-storages, boto3)
+- **Authentication**: Penn Labs Platform integration, OAuth2
+- **Payment Processing**: CyberSource Secure Acceptance
+- **Package Manager**: uv
+
+### Django Apps
+
+The backend is organized into Django apps:
+
+- **clubs** - Core club management functionality
+- **accounts** - User authentication and profiles
+- **options** - Runtime configuration options
+
+### Database Architecture
+
+#### Primary Database: PostgreSQL
+
+- **Development**: SQLite (default) or PostgreSQL via `DATABASE_URL`
+- **Production**: PostgreSQL (required)
+- Connection pooling with `conn_max_age=20`
+
+#### Models
+
+Key models include:
+- `Club` - Club information and metadata
+- `Membership` - User-club relationships with roles
+- `Event` - Club events and activities
+- `Ticket` - Event ticketing
+- `User` - Django user model extensions
+
+#### Change Tracking
+
+Django Simple History tracks changes to models for audit trails and version history.
+
+### Caching Strategy
+
+#### Development
+- In-memory cache (LocMemCache)
+- No Redis required
+
+#### Production
+- Redis for distributed caching
+- Cache timeout and connection error handling
+- Key prefix: `django`
+
+### WebSocket Support
+
+Django Channels provides WebSocket support for real-time features:
+
+- **Development**: In-memory channel layer
+- **Production**: Redis channel layer
+- **ASGI Application**: `pennclubs.asgi.application`
+
+### Authentication & Authorization
+
+#### Authentication Backends
+
+1. **Penn Labs Platform** - Primary authentication via OAuth2
+2. **Zoom OAuth2** - Zoom integration for virtual events
+3. **Django Model Backend** - Fallback authentication
+
+#### Session Management
+
+- Session-based authentication for web clients
+- Token authentication for API clients
+- Platform integration for Penn-wide SSO
+
+#### Permissions
+
+- Club-level permissions (owner, officer, member)
+- Admin permissions via Penn Labs Platform
+- OSA (Office of Student Affairs) special access
+
+### File Upload & Storage
+
+#### Development
+- Local filesystem storage in `backend/uploads/`
+- Media URL: `/api/media/`
+
+#### Production
+- AWS S3 for scalable file storage
+- Public-read ACL for club images and files
+- Max file size: 1GB
+
+### Email System
+
+#### Development
+- Console email backend (prints to terminal)
+- No SMTP configuration required
+
+#### Production
+- SMTP with TLS
+- Configurable FROM address based on branding
+- Template-based emails with dynamic domains
+
+### Payment Processing
+
+Penn Clubs uses **CyberSource Secure Acceptance Hosted Checkout** for event ticketing:
+
+#### Payment Flow
+
+1. User initiates checkout
+2. Backend generates signed payment parameters
+3. Frontend submits form POST to CyberSource
+4. User enters payment details on CyberSource-hosted page
+5. CyberSource POSTs results to `/api/tickets/payment_complete/`
+6. Backend validates signature and processes payment
+7. User redirected to confirmation page
+
+#### Configuration
+
+- **Development**: `https://testsecureacceptance.cybersource.com/pay`
+- **Production**: `https://secureacceptance.cybersource.com/pay`
+- Merchant ID: `upenn8504`
+- Credentials via environment variables
+
+### Settings Configuration
+
+Django settings are split by environment:
+
+- `pennclubs.settings.base` - Shared base settings
+- `pennclubs.settings.development` - Local development
+- `pennclubs.settings.production` - Production deployment
+- `pennclubs.settings.staging` - Staging environment
+- `pennclubs.settings.ci` - CI/CD pipelines
+
+## API Design
+
+### REST API
+
+The backend exposes a RESTful API at `/api/`:
+
+- **Authentication**: Session or token-based
+- **Serialization**: JSON
+- **Documentation**: Browsable API in development
+- **Schema**: OpenAPI/Swagger via DRF
+
+### Key API Endpoints
+
+- `/api/clubs/` - Club CRUD operations
+- `/api/events/` - Event management
+- `/api/tickets/` - Ticketing and payments
+- `/api/accounts/` - User authentication
+- `/api/admin/` - Django admin interface
+
+### Nested Routes
+
+DRF Nested Routers provide intuitive nested resource URLs:
+- `/api/clubs/{club_id}/events/` - Events for a specific club
+- `/api/clubs/{club_id}/members/` - Club membership
+
+## External Integrations
+
+### Penn Labs Platform
+
+Centralized authentication and authorization for all Penn Labs applications:
+- OAuth2 authentication flow
+- User profile synchronization
+- Admin permission management
+
+### Zoom Integration
+
+OAuth2 integration for virtual events:
+- Meeting creation and management
+- User authorization via Social Auth
+- Webhook support for meeting updates
+
+### Google Maps
+
+Location services for events and clubs:
+- Places autocomplete
+- Geocoding
+- Map display
+- API key: `NEXT_PUBLIC_GOOGLE_API_KEY`
+
+### AWS S3
+
+File storage for:
+- Club logos and banners
+- Event flyers
+- User uploads
+- Generated QR codes
+
+### Sentry
+
+Error tracking and performance monitoring:
+- Exception capture
+- Performance traces (1% sample rate)
+- User context
+- Release tracking
+
+## Development vs. Production
+
+| Feature | Development | Production |
+|---------|-------------|------------|
+| **Database** | SQLite | PostgreSQL |
+| **Cache** | In-memory | Redis |
+| **Channels** | In-memory | Redis |
+| **Storage** | Local filesystem | AWS S3 |
+| **Email** | Console | SMTP |
+| **Debug** | Enabled | Disabled |
+| **HTTPS** | Optional | Required |
+| **CyberSource** | Test endpoint | Production endpoint |
+| **CORS** | All origins | Specific domains |
+
+## Security Considerations
+
+### CSRF Protection
+
+- Django CSRF middleware enabled
+- CSRF tokens required for state-changing requests
+- Trusted origins configured per environment
+
+### CORS Configuration
+
+- Development: All origins allowed
+- Production: Restricted to approved domains
+- Credentials allowed for authenticated requests
+
+### Secret Management
+
+- Environment variables for all secrets
+- No secrets in version control
+- Different keys per environment
+
+### File Upload Security
+
+- File size limits (1GB max)
+- Content type validation
+- Virus scanning (production)
+- S3 bucket policies
+
+## Performance Optimization
+
+### Frontend
+
+- Server-side rendering for initial page load
+- Code splitting and lazy loading
+- Image optimization
+- Bundle size monitoring
+
+### Backend
+
+- Database query optimization
+- Select/prefetch related for N+1 prevention
+- Redis caching for expensive operations
+- Connection pooling
+- Async operations with Channels
+
+### CDN & Static Assets
+
+- Static files served separately
+- Blacknoise for static file serving
+- CloudFront CDN (production)
+
+## Monitoring & Observability
+
+### Error Tracking
+
+- Sentry for exception capture
+- Error grouping and alerts
+- Release tracking
+
+### Performance Monitoring
+
+- Sentry performance traces
+- Django Debug Toolbar (development)
+- Database query profiling
+
+### Logging
+
+- Django logging framework
+- Structured logging in production
+- Log aggregation and search
+
+## Deployment Architecture
+
+See the [Deployment Guide](/development/deployment) for detailed information on:
+- Container orchestration
+- CI/CD pipelines
+- Environment configuration
+- Scaling strategies

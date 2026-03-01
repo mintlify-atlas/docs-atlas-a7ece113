@@ -1,0 +1,674 @@
+---
+title: Deployment Guide
+description: Guide to deploying Penn Clubs to production
+---
+
+This guide covers deploying Penn Clubs to production environments using Docker containers and continuous deployment.
+
+## Deployment Overview
+
+Penn Clubs uses a containerized deployment architecture with:
+
+- **Docker** - Container runtime
+- **GitHub Actions** - CI/CD pipeline
+- **Traefik** - Reverse proxy and load balancer
+- **PostgreSQL** - Production database
+- **Redis** - Cache and channel layer
+- **AWS S3** - File storage
+- **Sentry** - Error tracking
+
+## Prerequisites
+
+### Required Services
+
+Before deploying, ensure you have:
+
+- **PostgreSQL database** - Version 12 or higher
+- **Redis instance** - For caching and channels
+- **AWS S3 bucket** - For file storage
+- **Domain name** - With DNS configured
+- **SSL certificate** - For HTTPS
+- **Sentry project** - For error tracking (optional)
+
+### Required Credentials
+
+Gather the following credentials:
+
+- AWS access key and secret key
+- Database connection URL
+- Redis host and port
+- SMTP credentials (if sending emails)
+- Platform OAuth credentials
+- CyberSource payment credentials (if using ticketing)
+- Sentry DSN (if using error tracking)
+
+## Environment Configuration
+
+### Backend Environment Variables
+
+Create a production environment configuration with these required variables:
+
+```bash .env.production
+# Django settings
+SECRET_KEY=your-secret-key-here
+DJANGO_SETTINGS_MODULE=pennclubs.settings.production
+ALLOWED_HOSTS=pennclubs.com,hub.provost.upenn.edu
+DOMAINS=pennclubs.com,hub.provost.upenn.edu
+
+# Database
+DATABASE_URL=postgres://user:password@host:5432/pennclubs
+
+# Redis
+REDIS_HOST=redis.example.com
+
+# AWS S3
+AWS_ACCESS_KEY_ID=AKIAIOSFODNN7EXAMPLE
+AWS_SECRET_ACCESS_KEY=wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
+AWS_STORAGE_BUCKET_NAME=pennclubs-uploads
+
+# Email
+EMAIL_HOST=smtp.example.com
+EMAIL_USERNAME=noreply@pennclubs.com
+EMAIL_PASSWORD=your-email-password
+
+# Platform OAuth
+LABS_REDIRECT_URI=https://pennclubs.com/api/accounts/callback/
+LABS_CLIENT_ID=your-client-id
+LABS_CLIENT_SECRET=your-client-secret
+
+# Sentry (optional)
+SENTRY_URL=https://examplePublicKey@o0.ingest.sentry.io/0
+
+# Branding
+NEXT_PUBLIC_SITE_NAME=clubs
+
+# Payment processing (optional)
+CYBERSOURCE_SA_PROFILE_ID=your-profile-id
+CYBERSOURCE_SA_ACCESS_KEY=your-access-key
+CYBERSOURCE_SA_SECRET_KEY=your-secret-key
+FRONTEND_URL=https://pennclubs.com
+
+# OSA access keys
+OSA_KEYS=osa-key-1,osa-key-2
+```
+
+### Frontend Environment Variables
+
+Configure frontend environment variables:
+
+```bash .env.local
+# Google Maps
+NEXT_PUBLIC_GOOGLE_API_KEY=your-google-api-key
+
+# Branding
+NEXT_PUBLIC_SITE_NAME=clubs
+
+# API proxy (in production, handled by reverse proxy)
+DOMAIN=https://pennclubs.com
+```
+
+<Warning>
+  **Security**: Never commit environment files to version control. Use secret management systems in production.
+</Warning>
+
+## Docker Deployment
+
+### Building Docker Images
+
+#### Backend Image
+
+```dockerfile backend/Dockerfile
+FROM python:3.13-slim
+
+WORKDIR /app
+
+# Install system dependencies
+RUN apt-get update && apt-get install -y \
+    gcc \
+    postgresql-client \
+    libpq-dev \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install uv
+RUN pip install uv
+
+# Copy dependency files
+COPY pyproject.toml .
+
+# Install Python dependencies
+RUN uv sync --no-dev
+
+# Copy application code
+COPY . .
+
+# Collect static files
+RUN uv run python manage.py collectstatic --noinput
+
+# Run migrations and start server
+CMD ["uv", "run", "gunicorn", "pennclubs.asgi:application", "-k", "uvicorn.workers.UvicornWorker", "--bind", "0.0.0.0:80"]
+```
+
+Build the backend image:
+```bash
+cd backend
+docker build -t pennlabs/penn-clubs-backend:latest .
+```
+
+#### Frontend Image
+
+```dockerfile frontend/Dockerfile
+FROM node:20-alpine
+
+WORKDIR /app
+
+# Install Bun
+RUN npm install -g bun
+
+# Copy dependency files
+COPY package.json bun.lock* .
+
+# Install dependencies
+RUN bun install --frozen-lockfile
+
+# Copy application code
+COPY . .
+
+# Build application
+RUN bun run build
+
+# Start application
+CMD ["bun", "start"]
+```
+
+Build the frontend image:
+```bash
+cd frontend
+docker build -t pennlabs/penn-clubs-frontend:latest .
+```
+
+### Docker Compose Production
+
+Create a production Docker Compose configuration:
+
+```yaml docker-compose.prod.yml
+version: "3.8"
+
+services:
+  postgres:
+    image: postgres:15
+    environment:
+      POSTGRES_DB: pennclubs
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - backend
+
+  redis:
+    image: redis:7-alpine
+    volumes:
+      - redis_data:/data
+    networks:
+      - backend
+
+  backend:
+    image: pennlabs/penn-clubs-backend:latest
+    env_file: .env.production
+    depends_on:
+      - postgres
+      - redis
+    networks:
+      - backend
+      - web
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.backend.rule=Host(`pennclubs.com`) && PathPrefix(`/api`)"
+      - "traefik.http.routers.backend.tls=true"
+      - "traefik.http.routers.backend.tls.certresolver=letsencrypt"
+
+  frontend:
+    image: pennlabs/penn-clubs-frontend:latest
+    env_file: .env.local
+    depends_on:
+      - backend
+    networks:
+      - web
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.frontend.rule=Host(`pennclubs.com`)"
+      - "traefik.http.routers.frontend.tls=true"
+      - "traefik.http.routers.frontend.tls.certresolver=letsencrypt"
+
+  traefik:
+    image: traefik:v2.10
+    command:
+      - "--api.dashboard=true"
+      - "--providers.docker=true"
+      - "--providers.docker.exposedbydefault=false"
+      - "--entrypoints.web.address=:80"
+      - "--entrypoints.websecure.address=:443"
+      - "--certificatesresolvers.letsencrypt.acme.email=admin@pennclubs.com"
+      - "--certificatesresolvers.letsencrypt.acme.storage=/letsencrypt/acme.json"
+      - "--certificatesresolvers.letsencrypt.acme.httpchallenge.entrypoint=web"
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - "/var/run/docker.sock:/var/run/docker.sock:ro"
+      - "letsencrypt:/letsencrypt"
+    networks:
+      - web
+
+volumes:
+  postgres_data:
+  redis_data:
+  letsencrypt:
+
+networks:
+  backend:
+  web:
+```
+
+### Deploying with Docker Compose
+
+<Steps>
+  <Step title="Pull or build images">
+    ```bash
+    docker-compose -f docker-compose.prod.yml pull
+    # Or build locally:
+    docker-compose -f docker-compose.prod.yml build
+    ```
+  </Step>
+
+  <Step title="Run database migrations">
+    ```bash
+    docker-compose -f docker-compose.prod.yml run --rm backend uv run ./manage.py migrate
+    ```
+  </Step>
+
+  <Step title="Collect static files">
+    ```bash
+    docker-compose -f docker-compose.prod.yml run --rm backend uv run ./manage.py collectstatic --noinput
+    ```
+  </Step>
+
+  <Step title="Start services">
+    ```bash
+    docker-compose -f docker-compose.prod.yml up -d
+    ```
+  </Step>
+
+  <Step title="Verify deployment">
+    ```bash
+    docker-compose -f docker-compose.prod.yml ps
+    docker-compose -f docker-compose.prod.yml logs -f
+    ```
+  </Step>
+</Steps>
+
+## Continuous Deployment
+
+### GitHub Actions Workflow
+
+Penn Clubs uses GitHub Actions for automated deployments:
+
+```yaml .github/workflows/build.yml
+name: Build and Deploy Clubs
+
+on:
+  push:
+    branches:
+      - master
+  pull_request:
+
+jobs:
+  backend-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.13'
+      
+      - name: Install uv
+        run: pip install uv
+      
+      - name: Install dependencies
+        working-directory: backend
+        run: uv sync
+      
+      - name: Run tests
+        working-directory: backend
+        run: uv run ./manage.py test
+      
+      - name: Upload coverage
+        uses: codecov/codecov-action@v3
+
+  frontend-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      
+      - name: Set up Node
+        uses: actions/setup-node@v3
+        with:
+          node-version: '20'
+      
+      - name: Install Bun
+        run: npm install -g bun
+      
+      - name: Install dependencies
+        working-directory: frontend
+        run: bun install
+      
+      - name: Type check
+        working-directory: frontend
+        run: bun test
+      
+      - name: Lint
+        working-directory: frontend
+        run: bun run lint
+
+  build-backend:
+    needs: [backend-test]
+    if: github.ref == 'refs/heads/master'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v4
+        with:
+          context: backend
+          push: true
+          tags: pennlabs/penn-clubs-backend:latest
+
+  build-frontend:
+    needs: [frontend-test]
+    if: github.ref == 'refs/heads/master'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v4
+        with:
+          context: frontend
+          push: true
+          tags: pennlabs/penn-clubs-frontend:latest
+
+  deploy:
+    needs: [build-backend, build-frontend]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Deploy to production
+        run: |
+          # Deploy using your orchestration platform
+          # e.g., kubectl, docker-compose, etc.
+```
+
+## Database Management
+
+### Running Migrations
+
+Apply database migrations in production:
+
+```bash
+# Using Docker Compose
+docker-compose -f docker-compose.prod.yml run --rm backend uv run ./manage.py migrate
+
+# Or directly in container
+docker exec -it penn-clubs-backend uv run ./manage.py migrate
+```
+
+### Creating Migrations
+
+Create migrations for model changes:
+
+```bash
+docker-compose -f docker-compose.prod.yml run --rm backend uv run ./manage.py makemigrations
+```
+
+### Database Backups
+
+Regular database backups are critical:
+
+```bash
+# Create backup
+docker exec -t penn-clubs-postgres pg_dump -U $DB_USER pennclubs > backup_$(date +%Y%m%d).sql
+
+# Restore backup
+cat backup_20260301.sql | docker exec -i penn-clubs-postgres psql -U $DB_USER pennclubs
+```
+
+Automate backups with cron:
+```bash
+0 2 * * * /path/to/backup-script.sh
+```
+
+## Scaling Considerations
+
+### Horizontal Scaling
+
+Scale backend workers:
+```bash
+docker-compose -f docker-compose.prod.yml up -d --scale backend=3
+```
+
+Scale frontend servers:
+```bash
+docker-compose -f docker-compose.prod.yml up -d --scale frontend=2
+```
+
+### Database Connection Pooling
+
+Configure connection pooling in settings:
+```python
+DATABASES = {
+    'default': dj_database_url.config(
+        conn_max_age=600,  # 10 minutes
+        conn_health_checks=True,
+    )
+}
+```
+
+### Redis Scaling
+
+For high-traffic deployments:
+- Use Redis Cluster for distributed caching
+- Configure Redis Sentinel for high availability
+- Set appropriate memory limits and eviction policies
+
+### CDN Configuration
+
+Use a CDN for static assets:
+- Configure CloudFront or similar CDN
+- Set appropriate cache headers
+- Enable gzip/brotli compression
+
+## Monitoring & Maintenance
+
+### Health Checks
+
+Implement health check endpoints:
+
+```python backend/pennclubs/views.py
+from django.http import JsonResponse
+from django.db import connection
+
+def health_check(request):
+    try:
+        # Check database
+        with connection.cursor() as cursor:
+            cursor.execute("SELECT 1")
+        
+        # Check Redis
+        from django.core.cache import cache
+        cache.set('health_check', 'ok', 10)
+        
+        return JsonResponse({'status': 'healthy'})
+    except Exception as e:
+        return JsonResponse({'status': 'unhealthy', 'error': str(e)}, status=500)
+```
+
+Configure in Docker:
+```yaml
+healthcheck:
+  test: ["CMD", "curl", "-f", "http://localhost/api/health"]
+  interval: 30s
+  timeout: 10s
+  retries: 3
+```
+
+### Log Management
+
+Configure structured logging:
+
+```python backend/pennclubs/settings/production.py
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'formatters': {
+        'json': {
+            'class': 'pythonjsonlogger.jsonlogger.JsonFormatter',
+        },
+    },
+    'handlers': {
+        'console': {
+            'class': 'logging.StreamHandler',
+            'formatter': 'json',
+        },
+    },
+    'root': {
+        'handlers': ['console'],
+        'level': 'INFO',
+    },
+}
+```
+
+View logs:
+```bash
+docker-compose -f docker-compose.prod.yml logs -f backend
+docker-compose -f docker-compose.prod.yml logs -f frontend
+```
+
+### Performance Monitoring
+
+Monitor with Sentry:
+- Track error rates and types
+- Monitor transaction performance
+- Set up alerts for critical errors
+- Review performance insights regularly
+
+## Security Best Practices
+
+### SSL/TLS Configuration
+
+- Use Let's Encrypt for free SSL certificates
+- Configure HSTS headers
+- Enable HTTP/2
+- Set secure cookie flags
+
+### Secret Management
+
+- Use environment variables for secrets
+- Rotate credentials regularly
+- Use secret management services (AWS Secrets Manager, HashiCorp Vault)
+- Never commit secrets to version control
+
+### Security Headers
+
+Configure security headers in Django:
+```python
+SECURE_SSL_REDIRECT = True
+SECURE_HSTS_SECONDS = 31536000
+SECURE_HSTS_INCLUDE_SUBDOMAINS = True
+SECURE_HSTS_PRELOAD = True
+SECURE_CONTENT_TYPE_NOSNIFF = True
+SECURE_BROWSER_XSS_FILTER = True
+X_FRAME_OPTIONS = 'DENY'
+CSRF_COOKIE_SECURE = True
+SESSION_COOKIE_SECURE = True
+```
+
+## Rollback Procedure
+
+If a deployment fails:
+
+<Steps>
+  <Step title="Stop current deployment">
+    ```bash
+    docker-compose -f docker-compose.prod.yml down
+    ```
+  </Step>
+
+  <Step title="Restore database backup (if needed)">
+    ```bash
+    cat backup_previous.sql | docker exec -i penn-clubs-postgres psql -U $DB_USER pennclubs
+    ```
+  </Step>
+
+  <Step title="Deploy previous version">
+    ```bash
+    docker-compose -f docker-compose.prod.yml pull pennlabs/penn-clubs-backend:previous
+    docker-compose -f docker-compose.prod.yml up -d
+    ```
+  </Step>
+
+  <Step title="Verify rollback">
+    ```bash
+    curl https://pennclubs.com/api/health
+    docker-compose -f docker-compose.prod.yml logs -f
+    ```
+  </Step>
+</Steps>
+
+## Troubleshooting
+
+### Container Won't Start
+
+Check logs:
+```bash
+docker-compose -f docker-compose.prod.yml logs backend
+```
+
+Common issues:
+- Missing environment variables
+- Database connection failures
+- Port conflicts
+- Insufficient memory
+
+### Database Connection Errors
+
+Verify connection:
+```bash
+docker exec -it penn-clubs-postgres psql -U $DB_USER pennclubs
+```
+
+Check:
+- Database credentials
+- Network connectivity
+- PostgreSQL is running
+- Connection pool settings
+
+### High Memory Usage
+
+Monitor resource usage:
+```bash
+docker stats
+```
+
+Optimize:
+- Adjust Gunicorn worker count
+- Configure Django connection pooling
+- Enable Redis memory limits
+- Review query performance
+
+## Next Steps
+
+- Review [System Architecture](/development/architecture) for understanding the system
+- Set up [Local Development](/development/setup) environment
+- Learn about [Testing](/development/testing) procedures

@@ -1,0 +1,286 @@
+---
+title: "Authentication"
+description: "Learn how to authenticate requests to the Penn Clubs API using Penn platform integration"
+---
+
+## Overview
+
+The Penn Clubs API uses multiple authentication methods to secure endpoints and provide access to user-specific data. Authentication is required for most write operations and personalized content.
+
+## Authentication Methods
+
+The API supports three authentication backends:
+
+1. **Penn Labs Platform Authentication** (Primary)
+2. **Session Authentication** (Browser-based)
+3. **Basic Authentication** (Testing only)
+
+### Penn Labs Platform Authentication
+
+Penn Clubs integrates with the [Penn Labs Platform](https://platform.pennlabs.org) for user authentication. This provides single sign-on across Penn Labs applications using Penn's authentication system.
+
+<ParamField header="Authorization" type="string" required>
+  Bearer token obtained from Penn Labs Platform
+</ParamField>
+
+**Authentication Flow:**
+
+1. Redirect users to Platform login
+2. User authenticates with Penn credentials
+3. Platform redirects back with authorization code
+4. Exchange code for access token
+5. Include token in API requests
+
+**Configuration:**
+
+```python
+PLATFORM_ACCOUNTS = {
+    "REDIRECT_URI": "https://pennclubs.com/api/accounts/callback/",
+    "CLIENT_ID": "your_client_id",
+    "CLIENT_SECRET": "your_client_secret",
+    "PLATFORM_URL": "https://platform.pennlabs.org"
+}
+```
+
+### Session Authentication
+
+For browser-based applications, session authentication is available after logging in through the web interface.
+
+**Login endpoint:**
+
+```
+POST /api/accounts/login/
+```
+
+<ParamField body="username" type="string" required>
+  Penn username (e.g., "bfranklin")
+</ParamField>
+
+<ParamField body="password" type="string" required>
+  User password
+</ParamField>
+
+**Example:**
+
+```bash
+curl -X POST "https://pennclubs.com/api/accounts/login/" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "username": "bfranklin",
+    "password": "test"
+  }'
+```
+
+After successful login, session cookies are automatically managed by the browser.
+
+### Basic Authentication
+
+Basic authentication is supported for testing and development:
+
+```bash
+curl -X GET "https://pennclubs.com/api/clubs/" \
+  -u "username:password"
+```
+
+**Note:** Basic authentication should not be used in production applications.
+
+## Making Authenticated Requests
+
+### Using Bearer Token
+
+Include the authorization token in the request header:
+
+```bash
+curl -X GET "https://pennclubs.com/api/settings/" \
+  -H "Authorization: Bearer YOUR_ACCESS_TOKEN" \
+  -H "Content-Type: application/json"
+```
+
+### Using Session Cookie
+
+For browser-based requests, cookies are automatically included:
+
+```javascript
+fetch('https://pennclubs.com/api/clubs/', {
+  method: 'GET',
+  credentials: 'include',
+  headers: {
+    'Content-Type': 'application/json'
+  }
+})
+```
+
+## OAuth Integration (Zoom)
+
+Penn Clubs supports OAuth2 integration with Zoom for virtual event management.
+
+### Zoom OAuth Flow
+
+**Authorization URL:**
+```
+https://zoom.us/oauth/authorize
+```
+
+**Token URL:**
+```
+https://zoom.us/oauth/token
+```
+
+**Scopes:**
+- `user:read` - Read user profile
+- `user:write` - Update user profile  
+- `meeting:read` - Read meeting information
+- `meeting:write` - Create and manage meetings
+
+**Connect Zoom account:**
+
+```bash
+curl -X POST "https://pennclubs.com/api/settings/zoom/" \
+  -H "Authorization: Bearer YOUR_TOKEN" \
+  -H "Content-Type: application/json"
+```
+
+## Permission Levels
+
+Authenticated users have different permission levels based on their club membership roles:
+
+<ResponseField name="Member" type="integer" value="20">
+  Basic club member - Can view club information
+</ResponseField>
+
+<ResponseField name="Officer" type="integer" value="10">
+  Club officer - Can manage events and members
+</ResponseField>
+
+<ResponseField name="Owner" type="integer" value="0">
+  Club owner - Full administrative access
+</ResponseField>
+
+## Public vs. Authenticated Access
+
+### Public Endpoints
+
+Some endpoints are accessible without authentication:
+
+- `GET /api/clubs/` - List approved, active clubs
+- `GET /api/clubs/{code}/` - View individual club details
+- `GET /api/events/` - List public events
+- `GET /api/tags/` - List all tags
+- `GET /api/badges/` - List all badges
+
+**Example public request:**
+
+```bash
+curl "https://pennclubs.com/api/clubs/"
+```
+
+### Authenticated Endpoints
+
+These endpoints require authentication:
+
+- `POST /api/clubs/` - Create new club
+- `PATCH /api/clubs/{code}/` - Update club information
+- `GET /api/settings/` - Get user settings
+- `GET /api/favorites/` - List user's favorited clubs
+- `POST /api/favorites/` - Favorite a club
+- `GET /api/memberships/` - List user's memberships
+
+**Example authenticated request:**
+
+```bash
+curl -X POST "https://pennclubs.com/api/favorites/" \
+  -H "Authorization: Bearer YOUR_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "club": "penn-labs"
+  }'
+```
+
+## Error Responses
+
+### 401 Unauthorized
+
+Returned when authentication is required but not provided:
+
+```json
+{
+  "detail": "Authentication credentials were not provided."
+}
+```
+
+### 403 Forbidden
+
+Returned when authenticated but lacking required permissions:
+
+```json
+{
+  "detail": "You do not have permission to perform this action."
+}
+```
+
+## Security Best Practices
+
+### Token Storage
+
+- Store tokens securely (use secure storage mechanisms)
+- Never commit tokens to version control
+- Rotate tokens regularly
+
+### HTTPS Only
+
+- Always use HTTPS in production
+- Never send credentials over unencrypted connections
+
+### Token Refresh
+
+Implement token refresh logic for long-running applications:
+
+```javascript
+async function refreshToken(refreshToken) {
+  const response = await fetch('https://platform.pennlabs.org/accounts/token/', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({
+      refresh_token: refreshToken,
+      grant_type: 'refresh_token'
+    })
+  });
+  
+  return await response.json();
+}
+```
+
+## Development Authentication
+
+For local development, a test user is available:
+
+- **Username:** `bfranklin`
+- **Password:** `test`
+
+Access the admin interface at `http://localhost:8000/api/admin/` to manage test users.
+
+## Testing Authentication
+
+Test your authentication setup:
+
+```bash
+# Test if authentication is working
+curl -X GET "https://pennclubs.com/api/settings/" \
+  -H "Authorization: Bearer YOUR_TOKEN"
+
+# Expected response if authenticated:
+{
+  "username": "bfranklin",
+  "email": "bfranklin@upenn.edu",
+  "first_name": "Benjamin",
+  "last_name": "Franklin"
+}
+```
+
+## Next Steps
+
+- [API Overview](/api/overview) - Learn about API conventions and response formats
+- [Clubs Endpoints](/api/endpoints/clubs) - Start working with clubs data
+- [User Settings](/api/endpoints/settings) - Manage user preferences and permissions

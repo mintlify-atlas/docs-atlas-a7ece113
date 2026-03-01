@@ -1,0 +1,213 @@
+---
+title: Events
+description: Create, manage, and promote events with integrated calendar and showing features
+---
+
+Penn Clubs provides a complete event management system for clubs to create, promote, and track events.
+
+## Creating Events
+
+Club officers can create events with detailed information and multiple showings.
+
+### Event Information
+
+<Steps>
+  <Step title="Basic Details">
+    Add event name, description (with rich text), and event type
+  </Step>
+  
+  <Step title="Event Type">
+    Select from Recruitment, GBM, Speaker, Activities Fair, Social, Career, or Other
+  </Step>
+  
+  <Step title="Event Image">
+    Upload a cover image to make your event stand out (automatically creates thumbnail)
+  </Step>
+  
+  <Step title="Event Link">
+    Add URL for Zoom meetings, registration forms, or more information
+  </Step>
+</Steps>
+
+### Event Showings
+
+Each event can have multiple showings (date/time instances):
+
+- **Start and end times** with timezone support (America/New_York default)
+- **Location** field for physical or virtual venues
+- **Location visibility** - control who can see the location
+- **Multiple showings** for recurring or multi-day events
+
+<Note>
+  Events and showings are separate - one event (e.g., "Weekly Meeting") can have multiple showings (every Monday at 7 PM).
+</Note>
+
+## Event Types
+
+Different event types serve different purposes:
+
+<Card title="Recruitment Events" icon="users">
+  Events focused on attracting new members, such as info sessions and mixers
+</Card>
+
+<Card title="General Body Meetings" icon="calendar">
+  Regular meetings for all club members
+</Card>
+
+<Card title="Speaker Events" icon="mic">
+  Guest speakers, panels, and presentations
+</Card>
+
+<Card title="Activities Fairs" icon="tent">
+  Special fair events for club showcases
+</Card>
+
+<Card title="Social Events" icon="smile">
+  Social gatherings and bonding activities
+</Card>
+
+<Card title="Career Events" icon="briefcase">
+  Professional development and networking events
+</Card>
+
+## Virtual Events and Zoom Integration
+
+Penn Clubs includes special features for Zoom meetings:
+
+### Zoom Meeting Detection
+
+When you add a Zoom URL:
+
+- **Automatic detection** of zoom.us links
+- **Special "Join Meeting" button** styled in Zoom blue
+- **Live attendance tracking** (with webhook integration)
+- **Real-time participant counts** displayed on event page
+
+### Live Event Statistics
+
+For active Zoom meetings:
+
+- **Current attendees** count
+- **Club members attending** count  
+- **Total attended** (includes those who left)
+- **Meeting duration** tracker
+- **WebSocket updates** for real-time data
+
+<Note>
+  Live stats hide counts under 8 attendees for privacy. Statistics update automatically via WebSocket connections.
+</Note>
+
+## Calendar Import
+
+Automatically sync events from external calendars:
+
+<Steps>
+  <Step title="Add ICS URL">
+    Paste your calendar's ICS feed URL (Google Calendar, Outlook, etc.)
+  </Step>
+  
+  <Step title="Auto-Import">
+    System periodically fetches and creates events from the calendar
+  </Step>
+  
+  <Step title="Smart Matching">
+    Existing events update instead of creating duplicates (matched by UUID and time)
+  </Step>
+  
+  <Step title="Event Type Detection">
+    Automatically detects event types based on title and description keywords
+  </Step>
+</Steps>
+
+### ICS Import Features
+
+- **URL extraction** from descriptions (Zoom links prioritized)
+- **Location parsing** from calendar events
+- **UUID tracking** to prevent duplicates
+- **Automatic updates** when calendar changes
+- **Malformed UUID handling** with uuid5 generation
+
+## Event Display
+
+### Event Cards
+
+Events appear throughout the platform:
+
+- **Club pages** - Show upcoming events in a carousel
+- **Home page** - Featured events across all clubs
+- **Calendar view** - See all events by date
+- **Event modal** - Quick preview without leaving the page
+
+### Event Pages
+
+Dedicated event pages include:
+
+- **Full event description** with rich text formatting
+- **Cover photo** or club logo
+- **Date and time information** with countdown
+- **"Happening Now" badge** for live events
+- **Location details** (if visible)
+- **Event link** or Zoom join button
+- **Related club information**
+- **Ticket availability** (if ticketed)
+
+## Happening Now
+
+Events currently in progress get special treatment:
+
+- **Live badge** with pulsing animation
+- **Prominent placement** on club pages and homepage
+- **Quick access** to join links
+- **Real-time updates** for Zoom meetings
+
+## Pinned Events
+
+Club officers can pin important events:
+
+- **Stays at top** of event list
+- **Extra visibility** on club page
+- **Perfect for** flagship events or urgent deadlines
+
+## Event Analytics
+
+Track engagement with your events:
+
+- **Modal views** - How many people clicked to see details
+- **Link clicks** - Track when users click event links
+- **Page visits** - Full event page views
+- **Attendance data** (for Zoom events with webhook)
+
+<Note>
+  Analytics help clubs understand which events generate the most interest and optimize future event planning.
+</Note>
+
+## Event Visibility
+
+Control who can see your events:
+
+- **Public events** - Visible to all visitors
+- **Student-only events** - Require Penn authentication
+- **Member-only events** - Only visible to club members
+- **Location privacy** - Hide location from non-authenticated users
+
+## Fair Events
+
+Special handling for activities fair events:
+
+- **Automatic creation** for registered clubs
+- **Fair-specific fields** and registration data
+- **Booth information** with GPS coordinates (for in-person fairs)
+- **Virtual fair rooms** with custom branding
+- **Fair event badges** to distinguish from regular events
+
+## Subscriptions and Notifications
+
+Students who subscribe to clubs receive:
+
+- **Event announcements** via email
+- **Upcoming event reminders**
+- **Event updates** if details change
+
+<Note>
+  Clubs can enable or disable subscription features in their settings.
+</Note>

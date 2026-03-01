@@ -1,0 +1,450 @@
+---
+title: Running Tests
+description: Guide to running and writing tests for Penn Clubs
+---
+
+Penn Clubs includes comprehensive test suites for both backend and frontend to ensure code quality and prevent regressions.
+
+## Backend Testing
+
+The backend uses Django's built-in test framework with unittest-xml-reporting for test reports.
+
+### Running Backend Tests
+
+<Steps>
+  <Step title="Navigate to backend directory">
+    ```bash
+    cd backend
+    ```
+  </Step>
+
+  <Step title="Run the full test suite">
+    ```bash
+    uv run ./manage.py test
+    ```
+  </Step>
+</Steps>
+
+### Running Specific Tests
+
+Run tests for a specific app:
+```bash
+uv run ./manage.py test clubs
+```
+
+Run tests for a specific test class:
+```bash
+uv run ./manage.py test clubs.tests.ClubTestCase
+```
+
+Run a specific test method:
+```bash
+uv run ./manage.py test clubs.tests.ClubTestCase.test_club_creation
+```
+
+### Test Coverage
+
+Generate a test coverage report:
+
+<CodeGroup>
+  ```bash Run with coverage
+  uv run coverage run --source='.' manage.py test
+  ```
+
+  ```bash View coverage report
+  uv run coverage report
+  ```
+
+  ```bash HTML coverage report
+  uv run coverage html
+  ```
+</CodeGroup>
+
+The HTML report will be available in `htmlcov/index.html`.
+
+### Writing Backend Tests
+
+Django tests are located in `tests.py` files within each app:
+
+```python backend/clubs/tests.py
+from django.test import TestCase
+from clubs.models import Club
+
+class ClubTestCase(TestCase):
+    def setUp(self):
+        """Set up test data."""
+        Club.objects.create(
+            name="Test Club",
+            code="test-club",
+            description="A test club"
+        )
+
+    def test_club_creation(self):
+        """Test that a club can be created."""
+        club = Club.objects.get(code="test-club")
+        self.assertEqual(club.name, "Test Club")
+
+    def test_club_str(self):
+        """Test the string representation of a club."""
+        club = Club.objects.get(code="test-club")
+        self.assertEqual(str(club), "Test Club")
+```
+
+### Test Database
+
+Django automatically creates a test database for running tests:
+- Migrations are applied automatically
+- Database is destroyed after tests complete
+- Each test runs in a transaction that's rolled back
+
+### Test Fixtures
+
+The `populate` management command can be used to create test data:
+```bash
+uv run ./manage.py populate
+```
+
+This creates:
+- Test users (username: `bfranklin`, password: `test`)
+- Sample clubs
+- Sample events
+- Sample memberships
+
+## Frontend Testing
+
+The frontend includes multiple types of tests: type checking, linting, and integration tests.
+
+### Type Checking
+
+Penn Clubs uses TypeScript for type safety. Run the type checker:
+
+<Steps>
+  <Step title="Navigate to frontend directory">
+    ```bash
+    cd frontend
+    ```
+  </Step>
+
+  <Step title="Run TypeScript compiler">
+    <CodeGroup>
+      ```bash bun
+      bun test
+      ```
+
+      ```bash npm
+      npm test
+      ```
+
+      ```bash yarn
+      yarn test
+      ```
+    </CodeGroup>
+    
+    This runs `tsc --noemit` to check types without emitting files.
+  </Step>
+</Steps>
+
+### Linting
+
+Linting checks code style and catches common errors:
+
+<CodeGroup>
+  ```bash Check for issues
+  bun run lint
+  ```
+
+  ```bash Auto-fix issues
+  bun run clean
+  ```
+</CodeGroup>
+
+The linter checks:
+- ESLint rules
+- TypeScript-specific rules
+- React best practices
+- Import ordering
+- Unused imports
+
+### Integration Tests
+
+Cypress integration tests verify end-to-end functionality:
+
+```bash
+bun run integration
+```
+
+This runs the `test.sh` script which:
+1. Starts the backend and frontend servers
+2. Waits for services to be ready
+3. Runs Cypress tests
+4. Generates coverage reports
+
+### Running Cypress Interactively
+
+For debugging tests, run Cypress in interactive mode:
+
+```bash
+npx cypress open
+```
+
+This opens the Cypress Test Runner where you can:
+- Run individual test files
+- See tests execute in a browser
+- Debug failures with browser DevTools
+- Take screenshots and videos
+
+### Writing Frontend Tests
+
+Cypress tests are located in the `cypress/` directory:
+
+```javascript cypress/integration/clubs.spec.js
+describe('Club Discovery', () => {
+  beforeEach(() => {
+    cy.visit('/')
+  })
+
+  it('should display clubs on homepage', () => {
+    cy.get('[data-testid="club-card"]').should('have.length.greaterThan', 0)
+  })
+
+  it('should filter clubs by search', () => {
+    cy.get('[data-testid="search-input"]').type('Penn Labs')
+    cy.get('[data-testid="club-card"]').should('contain', 'Penn Labs')
+  })
+
+  it('should navigate to club detail page', () => {
+    cy.get('[data-testid="club-card"]').first().click()
+    cy.url().should('include', '/club/')
+    cy.get('[data-testid="club-name"]').should('be.visible')
+  })
+})
+```
+
+## Code Quality Tools
+
+### Backend: Ruff
+
+Penn Clubs uses Ruff for Python linting and formatting:
+
+<CodeGroup>
+  ```bash Check code
+  cd backend
+  uv run ruff check .
+  ```
+
+  ```bash Auto-fix issues
+  uv run ruff check . --fix
+  ```
+
+  ```bash Format code
+  uv run ruff format .
+  ```
+</CodeGroup>
+
+#### Ruff Configuration
+
+Ruff is configured in `backend/pyproject.toml`:
+
+```toml backend/pyproject.toml
+[tool.ruff]
+exclude = [".venv", "migrations"]
+line-length = 88
+
+[tool.ruff.lint]
+ignore = ["E203"]
+select = [
+    "E",   # pycodestyle errors
+    "F",   # pyflakes
+    "Q",   # flake8-quotes
+    "W",   # pycodestyle warnings
+    "I",   # isort
+]
+
+[tool.ruff.lint.flake8-quotes]
+inline-quotes = "double"
+
+[tool.ruff.lint.isort]
+known-first-party = ["pennclubs", "clubs"]
+lines-after-imports = 2
+```
+
+### Frontend: ESLint & Prettier
+
+ESLint and Prettier ensure consistent code style:
+
+<CodeGroup>
+  ```bash Check with ESLint
+  cd frontend
+  bun run lint
+  ```
+
+  ```bash Fix with ESLint
+  bun run clean
+  ```
+</CodeGroup>
+
+### Pre-commit Hooks
+
+Pre-commit hooks automatically run checks before each commit:
+
+```bash
+cd backend
+uv run pre-commit install
+```
+
+This ensures:
+- Code is properly formatted
+- Linting passes
+- No trailing whitespace
+- Files end with newlines
+
+## Continuous Integration
+
+GitHub Actions runs automated tests on every pull request.
+
+### CI Workflow
+
+1. **Backend Tests**
+   - Set up Python 3.13
+   - Install dependencies with uv
+   - Run Django test suite
+   - Upload coverage to Codecov
+
+2. **Frontend Tests**
+   - Set up Node 20
+   - Install dependencies with Bun
+   - Run TypeScript type checking
+   - Run ESLint
+   - Run Cypress integration tests
+   - Upload coverage to Codecov
+
+3. **Docker Build**
+   - Build backend Docker image
+   - Build frontend Docker image
+   - Run integration tests in containers
+
+### Docker Compose Testing
+
+The `docker-compose.test.yaml` file defines a complete testing environment:
+
+```bash
+docker-compose -f docker-compose.test.yaml up --abort-on-container-exit
+```
+
+This starts:
+- PostgreSQL database
+- Backend service
+- Frontend service  
+- Traefik reverse proxy
+
+And runs:
+- Backend migrations
+- Integration tests
+- Frontend build verification
+
+## Test Coverage Goals
+
+### Backend Coverage
+
+- **Minimum**: 70% overall coverage
+- **Target**: 80%+ overall coverage
+- **Critical paths**: 90%+ coverage for authentication, payments, permissions
+
+### Frontend Coverage
+
+- **Type safety**: 100% TypeScript (no `any` without justification)
+- **Integration tests**: Critical user journeys covered
+- **Component tests**: Reusable components tested in Storybook
+
+## Common Testing Issues
+
+### Backend: Database Errors
+
+If you encounter database errors during tests:
+
+```bash
+# Reset test database
+uv run ./manage.py test --keepdb=False
+
+# Or manually delete it
+rm db.sqlite3
+uv run ./manage.py migrate
+```
+
+### Frontend: Port Conflicts
+
+If Cypress can't connect to the app:
+
+1. Ensure both backend and frontend are running
+2. Check that ports 8000 and 3000 are available
+3. Verify the proxy configuration in `frontend/package.json`
+
+### Integration Test Timeouts
+
+If integration tests timeout:
+
+```bash
+# Increase timeout in cypress.json
+{
+  "defaultCommandTimeout": 10000,
+  "requestTimeout": 10000
+}
+```
+
+## Best Practices
+
+### Backend Testing
+
+- Use `setUp()` and `tearDown()` for test fixtures
+- Test both success and error cases
+- Use factories for creating test data
+- Mock external API calls
+- Test permissions and authentication
+- Test edge cases and boundary conditions
+
+### Frontend Testing
+
+- Use data-testid attributes for reliable selectors
+- Test user interactions, not implementation details
+- Mock API responses for consistent tests
+- Test accessibility with Cypress axe
+- Test responsive layouts
+- Keep tests independent and isolated
+
+### General
+
+- Write tests before fixing bugs (TDD for bug fixes)
+- Keep tests fast and focused
+- Use descriptive test names
+- Group related tests in classes/describes
+- Clean up test data after tests
+- Run tests locally before pushing
+
+## Running All Tests
+
+To run the complete test suite:
+
+```bash
+# Backend tests
+cd backend
+uv run ./manage.py test
+uv run ruff check .
+
+# Frontend tests
+cd frontend
+bun test
+bun run lint
+bun run integration
+```
+
+Or use the CI script:
+```bash
+# From project root
+.github/workflows/build.yml
+```
+
+## Next Steps
+
+- Learn about [System Architecture](/development/architecture)
+- Set up your [Local Development Environment](/development/setup)
+- Read the [Deployment Guide](/development/deployment)

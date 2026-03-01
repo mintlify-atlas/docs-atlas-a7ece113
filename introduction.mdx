@@ -1,0 +1,214 @@
+---
+title: Welcome to Penn Clubs
+description: Official platform for club discovery, recruitment, and events at the University of Pennsylvania
+---
+
+<img
+  className="block dark:hidden"
+  src="https://i.imgur.com/WwUKiHP.png"
+  alt="Penn Clubs Hero Light"
+/>
+<img
+  className="hidden dark:block"
+  src="https://i.imgur.com/WwUKiHP.png"
+  alt="Penn Clubs Hero Dark"
+/>
+
+## Find Your People!
+
+Penn Clubs is the official platform for student organization discovery, recruitment, and event management at the University of Pennsylvania. Built with React/Next.js on the frontend and a Django-based REST API on the backend, Penn Clubs makes it easy for students to explore over 1,000 student organizations and for club leaders to manage their organizations effectively.
+
+<CardGroup cols={2}>
+  <Card
+    title="Discover Clubs"
+    icon="magnifying-glass"
+    href="/quickstart"
+  >
+    Search and filter through hundreds of student organizations to find your perfect community at Penn
+  </Card>
+  <Card
+    title="Manage Events"
+    icon="calendar"
+    href="/api-reference"
+  >
+    Create, promote, and track events with integrated calendars and real-time updates
+  </Card>
+  <Card
+    title="Handle Applications"
+    icon="clipboard-check"
+    href="/features/applications"
+  >
+    Streamline your recruitment process with built-in application management and committee workflows
+  </Card>
+  <Card
+    title="Club Fairs"
+    icon="people-group"
+    href="/features/club-fairs"
+  >
+    Participate in virtual and in-person club fairs with QR codes, booth management, and analytics
+  </Card>
+</CardGroup>
+
+## Key Features
+
+<AccordionGroup>
+  <Accordion title="Advanced Search & Filtering" icon="filter">
+    Find clubs by name, tags, size, application requirements, recruiting cycle, and more. Our Fuse.js-powered search provides fuzzy matching for intelligent results.
+    
+    ```typescript
+    // From clubs.tsx - Search functionality
+    import Fuse from 'fuse.js'
+    
+    // Filter clubs by multiple criteria
+    const searchParams = {
+      tags: ['Professional', 'Athletics'],
+      size: 'SIZE_MEDIUM', // 21-50 members
+      application_required: 'OPEN_MEMBERSHIP',
+      recruiting_cycle: 'RECRUITING_FALL'
+    }
+    ```
+  </Accordion>
+
+  <Accordion title="Membership Management" icon="users">
+    Manage club rosters with three membership levels:
+    - **Owner** (role 0): Full administrative access
+    - **Officer** (role 10): Manage events and members
+    - **Member** (role 20): Basic club access
+    
+    Members can bookmark clubs, subscribe to updates, and track their involvement across all Penn organizations.
+  </Accordion>
+
+  <Accordion title="Event Management" icon="calendar-days">
+    Create and manage events with:
+    - Image uploads and rich descriptions
+    - Start/end time tracking with timezone support
+    - Event types: Recruitment, GBM, Social, Performance, Speaker, Career
+    - ICS calendar integration for automatic event imports
+    - Live event streaming with virtual attendance tracking
+  </Accordion>
+
+  <Accordion title="Application System" icon="file-lines">
+    Full-featured recruitment application system:
+    - Custom application questions (text, multiple choice, info blocks)
+    - Multi-committee workflows
+    - Application cycles with deadlines
+    - Submission management and review interface
+    
+    ```python
+    # From models.py - Application structure
+    class ClubApplication(models.Model):
+        club = models.ForeignKey(Club, on_delete=models.CASCADE)
+        application_start_time = models.DateTimeField()
+        application_end_time = models.DateTimeField()
+        result_release_time = models.DateTimeField()
+        committees = models.ManyToManyField(ApplicationCommittee)
+    ```
+  </Accordion>
+
+  <Accordion title="Ticketing & Payments" icon="ticket">
+    Integrated payment processing powered by CyberSource Secure Acceptance:
+    - Event ticketing with QR code generation
+    - Secure payment handling
+    - Cart management
+    - Ticket transfer capabilities
+    - Payment reconciliation for club treasurers
+  </Accordion>
+</AccordionGroup>
+
+## Platform Statistics
+
+<CardGroup cols={3}>
+  <Card title="1,000+" icon="building">
+    Student Organizations
+  </Card>
+  <Card title="10,000+" icon="users">
+    Active Students
+  </Card>
+  <Card title="500+" icon="calendar-check">
+    Events per Semester
+  </Card>
+</CardGroup>
+
+## Technology Stack
+
+<Tabs>
+  <Tab title="Frontend">
+    **Framework**: Next.js 15.2.7 with React 19.2.2
+    
+    **Key Libraries**:
+    - TypeScript for type safety
+    - Styled Components for styling
+    - React Big Calendar for event visualization
+    - Fuse.js for fuzzy search
+    - Formik for form management
+    - React Beautiful DnD for drag-and-drop
+    
+    **Build Tool**: Bun with Turbopack
+  </Tab>
+  
+  <Tab title="Backend">
+    **Framework**: Django with Django REST Framework
+    
+    **Key Features**:
+    - Python 3.13 with uv package manager
+    - PostgreSQL database
+    - AWS S3 for file storage
+    - WebSocket support for real-time updates
+    - OpenAPI/Swagger documentation
+    - Historical records tracking
+    
+    **Authentication**: Penn Labs Platform OAuth integration
+  </Tab>
+  
+  <Tab title="DevOps">
+    **CI/CD**: GitHub Actions
+    
+    **Deployment**: Kubernetes with Helm charts
+    
+    **Monitoring**:
+    - Sentry for error tracking
+    - CodeCov for test coverage
+    - Cypress for integration testing
+  </Tab>
+</Tabs>
+
+## Quick Links
+
+<CardGroup cols={2}>
+  <Card
+    title="Get Started as a Student"
+    icon="graduation-cap"
+    href="/quickstart"
+  >
+    Learn how to discover and join clubs
+  </Card>
+  <Card
+    title="Development Setup"
+    icon="code"
+    href="/installation"
+  >
+    Set up your local development environment
+  </Card>
+  <Card
+    title="API Documentation"
+    icon="book-open"
+    href="/api-reference"
+  >
+    Explore the REST API endpoints
+  </Card>
+  <Card
+    title="GitHub Repository"
+    icon="github"
+    href="https://github.com/pennlabs/penn-clubs"
+  >
+    View the source code and contribute
+  </Card>
+</CardGroup>
+
+## Maintained by Penn Labs
+
+Penn Clubs is developed and maintained by [Penn Labs](https://pennlabs.org/), Penn's premier student-run software development organization. We build tools that help over 30,000 students navigate campus life.
+
+<Note>
+  For platform support, contact [contact@pennclubs.com](mailto:contact@pennclubs.com). For OSA-related inquiries, reach out to [vpul-orgs@pobox.upenn.edu](mailto:vpul-orgs@pobox.upenn.edu).
+</Note>

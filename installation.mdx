@@ -1,0 +1,600 @@
+---
+title: Installation & Development Setup
+description: Set up Penn Clubs for local development on Mac, Linux, or WSL
+---
+
+## Overview
+
+Penn Clubs consists of two main components that need to be running for development:
+- **Backend**: Django REST API (Python 3.13)
+- **Frontend**: Next.js application (Node 22 with Bun)
+
+This guide will walk you through setting up both components on Mac, Linux, or Windows Subsystem for Linux (WSL).
+
+<Info>
+  Questions during setup? Check out the [extended development guide](https://github.com/pennlabs/penn-clubs/wiki/Development-Guide) for FAQs and troubleshooting.
+</Info>
+
+## Prerequisites
+
+<CardGroup cols={2}>
+  <Card title="Backend Requirements" icon="server">
+    - Python 3.13
+    - [uv](https://docs.astral.sh/uv/getting-started/installation/) package manager
+    - PostgreSQL (for dependency compilation)
+    - Git
+  </Card>
+  
+  <Card title="Frontend Requirements" icon="window-maximize">
+    - Node.js 22.11.0 (exact version)
+    - [Bun](https://bun.sh) package manager
+    - Git
+  </Card>
+</CardGroup>
+
+<Warning>
+  Penn Clubs requires **Node 22** specifically. Other versions (including 18 and 20) are not supported and may cause build failures.
+</Warning>
+
+## Backend Setup
+
+<Steps>
+  <Step title="Install uv Package Manager">
+    Install [uv](https://docs.astral.sh/uv/getting-started/installation/), a fast Python package manager:
+    
+    <Tabs>
+      <Tab title="Mac/Linux">
+        ```bash
+        curl -LsSf https://astral.sh/uv/install.sh | sh
+        ```
+      </Tab>
+      
+      <Tab title="With pip">
+        ```bash
+        pip install uv
+        ```
+      </Tab>
+      
+      <Tab title="With Homebrew">
+        ```bash
+        brew install uv
+        ```
+      </Tab>
+    </Tabs>
+  </Step>
+
+  <Step title="Install PostgreSQL Dependencies (Mac)">
+    On Mac, you need to install PostgreSQL and OpenSSL for the `psycopg2` dependency:
+    
+    ```bash
+    # Install PostgreSQL and OpenSSL
+    brew install postgresql
+    brew install openssl
+    brew unlink openssl && brew link openssl --force
+    
+    # Add OpenSSL to your shell configuration
+    echo 'export PATH="/usr/local/opt/openssl@3/bin:$PATH"' >> ~/.zshrc
+    export LDFLAGS="-L/usr/local/opt/openssl@3/lib"
+    export CPPFLAGS="-I/usr/local/opt/openssl@3/include"
+    ```
+    
+    <Info>
+      If you're not modifying dependencies right away, you can skip this step and return to it later if needed.
+    </Info>
+  </Step>
+
+  <Step title="Install Python Build Dependencies (Linux)">
+    On Linux, install build dependencies:
+    
+    ```bash
+    sudo add-apt-repository ppa:deadsnakes/ppa
+    sudo apt-get update
+    sudo apt-get install gcc python3.13-dev libpq-dev
+    ```
+  </Step>
+
+  <Step title="Clone Repository and Install Dependencies">
+    ```bash
+    # Clone the repository
+    git clone https://github.com/pennlabs/penn-clubs.git
+    cd penn-clubs/backend
+    
+    # Install Python dependencies
+    uv sync
+    ```
+    
+    <Note>
+      The first `uv sync` may take a few minutes. If you skipped installing PostgreSQL dependencies, you might see locking errors - this is expected and won't affect basic development.
+    </Note>
+  </Step>
+
+  <Step title="Set Up Pre-commit Hooks">
+    Install pre-commit hooks for code quality checks:
+    
+    ```bash
+    uv run pre-commit install
+    ```
+    
+    These hooks will run automatically before each commit to ensure code formatting and linting standards.
+  </Step>
+
+  <Step title="Initialize Database">
+    Run Django migrations and populate with test data:
+    
+    ```bash
+    # Apply database migrations
+    uv run ./manage.py migrate
+    
+    # Populate database with dummy data (development only)
+    uv run ./manage.py populate
+    ```
+    
+    The `populate` command creates test clubs and a test user:
+    - **Username**: `bfranklin`
+    - **Password**: `test`
+    
+    ```python
+    # Example clubs created by populate command
+    clubs = [
+        {
+            "code": "pppjo",
+            "name": "Penn Pre-Professional Juggling Organization",
+            "description": """The PPPJO is looking for intense jugglers seeking to juggle
+    their way to the top. Come with your juggling equipment (and business formal attire) to
+    hone your skills in time for recruiting season!""",
+            "size": Club.SIZE_MEDIUM,  # 21-50 members
+            "application_required": Club.OPEN_MEMBERSHIP,
+            "recruiting_cycle": Club.RECRUITING_OPEN,
+            "tags": ["Professional", "Athletics", "Undergraduate"]
+        }
+        # ... more test clubs
+    ]
+    ```
+  </Step>
+
+  <Step title="Start Development Server">
+    ```bash
+    uv run ./manage.py runserver
+    ```
+    
+    The backend will be available at [http://localhost:8000](http://localhost:8000)
+    
+    <Tip>
+      Access the Django admin interface at [http://localhost:8000/api/admin](http://localhost:8000/api/admin) using the test credentials.
+    </Tip>
+  </Step>
+
+  <Step title="Run Tests (Optional)">
+    Run the test suite to verify your setup:
+    
+    ```bash
+    uv run ./manage.py test
+    ```
+  </Step>
+</Steps>
+
+## Frontend Setup
+
+<Warning>
+  Do not kill your backend server! Open a **new terminal window** for frontend setup.
+</Warning>
+
+<Steps>
+  <Step title="Install Node.js 22">
+    Penn Clubs requires Node.js 22.11.0. Install it using your preferred method:
+    
+    <Tabs>
+      <Tab title="nvm (Recommended)">
+        ```bash
+        # Install nvm
+        curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.0/install.sh | bash
+        
+        # Install Node 22
+        nvm install 22.11.0
+        nvm use 22.11.0
+        ```
+      </Tab>
+      
+      <Tab title="Homebrew (Mac)">
+        ```bash
+        brew install node@22
+        ```
+      </Tab>
+      
+      <Tab title="Direct Download">
+        Download from [nodejs.org](https://nodejs.org/en/download/) and select version 22.11.0
+      </Tab>
+    </Tabs>
+    
+    Verify your Node version:
+    ```bash
+    node --version  # Should output v22.11.0
+    ```
+  </Step>
+
+  <Step title="Install Bun Package Manager">
+    Install Bun, a fast JavaScript package manager and runtime:
+    
+    ```bash
+    curl -fsSL https://bun.sh/install | bash
+    ```
+    
+    Or with npm:
+    ```bash
+    npm install -g bun
+    ```
+  </Step>
+
+  <Step title="Navigate to Frontend Directory">
+    ```bash
+    cd frontend  # If you're still in the backend directory
+    # Or from the project root:
+    cd penn-clubs/frontend
+    ```
+  </Step>
+
+  <Step title="Install Dependencies">
+    ```bash
+    bun install
+    ```
+    
+    This will install all dependencies defined in `package.json`, including:
+    ```json
+    {
+      "dependencies": {
+        "next": "~15.2.7",
+        "react": "^19.2.2",
+        "react-dom": "^19.2.2",
+        "typescript": "5.5.4",
+        "styled-components": "npm:@sanity/css-in-js",
+        "formik": "^2.4.9",
+        "fuse.js": "^7.1.0",
+        "react-big-calendar": "^1.19.4"
+        // ... and many more
+      }
+    }
+    ```
+  </Step>
+
+  <Step title="Start Development Server">
+    ```bash
+    bun dev
+    ```
+    
+    The frontend will be available at [http://localhost:3000](http://localhost:3000)
+    
+    <Info>
+      The frontend automatically proxies API requests to `http://localhost:8000` as configured in `package.json`:
+      ```json
+      {
+        "proxy": "http://localhost:8000/"
+      }
+      ```
+    </Info>
+  </Step>
+
+  <Step title="Log In to Test Account">
+    1. Navigate to [http://localhost:3000](http://localhost:3000)
+    2. Click **Login** in the top right corner
+    3. Use credentials:
+       - Username: `bfranklin`
+       - Password: `test`
+    
+    Or access the admin interface directly at [http://localhost:3000/api/admin](http://localhost:3000/api/admin)
+  </Step>
+</Steps>
+
+## Environment Variables
+
+### Production Environment Variables
+
+<Warning>
+  The following environment variables are required for production deployments but are NOT needed for local development.
+</Warning>
+
+<Tabs>
+  <Tab title="Backend (.env)">
+    Create a `.env` file in the `backend` directory for production:
+    
+    ```bash
+    # Required
+    SECRET_KEY=your-secret-key-here
+    SENTRY_URL=https://your-sentry-url
+    
+    # AWS S3 Storage
+    AWS_ACCESS_KEY_ID=your-access-key
+    AWS_SECRET_ACCESS_KEY=your-secret-key
+    AWS_STORAGE_BUCKET_NAME=your-bucket-name
+    
+    # Penn Labs Platform OAuth
+    LABS_REDIRECT_URI=https://pennclubs.com/callback
+    LABS_CLIENT_ID=your-client-id
+    LABS_CLIENT_SECRET=your-client-secret
+    
+    # Optional
+    NEXT_PUBLIC_SITE_NAME=clubs  # or 'fyh' for Hub@Penn
+    ```
+  </Tab>
+  
+  <Tab title="Frontend (.env.local)">
+    Create a `.env.local` file in the `frontend` directory:
+    
+    ```bash
+    # Google Maps API (for location features)
+    NEXT_PUBLIC_GOOGLE_API_KEY=your-google-api-key
+    
+    # Site configuration (optional)
+    NEXT_PUBLIC_SITE_NAME=clubs  # 'clubs' or 'fyh'
+    ```
+  </Tab>
+  
+  <Tab title="Ticketing (Optional)">
+    For CyberSource payment processing (optional, only if testing ticketing):
+    
+    ```bash
+    # CyberSource Secure Acceptance
+    CYBERSOURCE_SA_PROFILE_ID=your-test-profile-id
+    CYBERSOURCE_SA_ACCESS_KEY=your-test-access-key
+    CYBERSOURCE_SA_SECRET_KEY=your-test-secret-key
+    
+    # ngrok URL for local development
+    NGROK_URL=https://abc123.ngrok-free.app
+    FRONTEND_URL=https://pennclubs.com  # Production callback URL
+    ```
+    
+    <Info>
+      See the [Ticketing Development](#ticketing-development) section for setup instructions.
+    </Info>
+  </Tab>
+</Tabs>
+
+## Ticketing Development
+
+<Accordion title="Setting Up Local Ticketing (Advanced)">
+  Penn Clubs uses CyberSource Secure Acceptance Hosted Checkout for payment processing. Local development requires ngrok to create a publicly accessible URL for payment callbacks.
+  
+  <Steps>
+    <Step title="Install ngrok">
+      <Tabs>
+        <Tab title="Mac">
+          ```bash
+          brew install ngrok
+          ```
+        </Tab>
+        
+        <Tab title="Ubuntu/Debian">
+          ```bash
+          curl -sSL https://ngrok-agent.s3.amazonaws.com/ngrok.asc \
+            | sudo tee /etc/apt/trusted.gpg.d/ngrok.asc >/dev/null \
+            && echo "deb https://ngrok-agent.s3.amazonaws.com buster main" \
+            | sudo tee /etc/apt/sources.list.d/ngrok.list \
+            && sudo apt update && sudo apt install ngrok
+          ```
+        </Tab>
+        
+        <Tab title="Snap">
+          ```bash
+          sudo snap install ngrok
+          ```
+        </Tab>
+      </Tabs>
+    </Step>
+    
+    <Step title="Start ngrok Tunnel">
+      In a separate terminal:
+      ```bash
+      ngrok http 3000
+      ```
+      
+      Copy the HTTPS forwarding URL (e.g., `https://abc123.ngrok-free.app`)
+    </Step>
+    
+    <Step title="Configure Backend">
+      Create `.env` in the `backend` directory:
+      ```bash
+      CYBERSOURCE_SA_PROFILE_ID=your-test-profile-id
+      CYBERSOURCE_SA_ACCESS_KEY=your-test-access-key
+      CYBERSOURCE_SA_SECRET_KEY=your-test-secret-key
+      NGROK_URL=https://abc123.ngrok-free.app
+      ```
+    </Step>
+    
+    <Step title="Restart Backend with Settings">
+      ```bash
+      cd backend
+      DJANGO_SETTINGS_MODULE=pennclubs.settings.development uv run ./manage.py runserver
+      ```
+    </Step>
+    
+    <Step title="Access via Localhost">
+      Always access the app at `http://localhost:3000` (NOT the ngrok URL) to maintain proper authentication and session handling.
+    </Step>
+  </Steps>
+  
+  **Payment Flow:**
+  1. User initiates checkout → Backend generates signed payment parameters
+  2. Frontend submits form POST to CyberSource with signed parameters
+  3. User enters payment details on CyberSource's hosted page
+  4. CyberSource POSTs results to `/api/tickets/payment_complete/` via ngrok
+  5. Backend validates signature and processes payment
+  
+  <Tip>
+    Use [CyberSource test card numbers](https://developer.cybersource.com/hello-world/testing-guide.html) when testing. The development environment automatically uses the test endpoint.
+  </Tip>
+</Accordion>
+
+## Code Quality Tools
+
+<CardGroup cols={2}>
+  <Card title="Backend Linting" icon="broom">
+    ```bash
+    cd backend
+    
+    # Run pre-commit hooks manually
+    uv run pre-commit run --all-files
+    
+    # Format code with Black
+    uv run black .
+    
+    # Check with flake8
+    uv run flake8
+    ```
+  </Card>
+  
+  <Card title="Frontend Linting" icon="sparkles">
+    ```bash
+    cd frontend
+    
+    # Lint code
+    bun run lint
+    
+    # Auto-fix issues
+    bun run clean
+    
+    # Type check
+    bun run test
+    ```
+  </Card>
+</CardGroup>
+
+## Building for Production
+
+<Tabs>
+  <Tab title="Backend">
+    The backend doesn't require a build step, but you can prepare for deployment:
+    
+    ```bash
+    # Collect static files
+    uv run ./manage.py collectstatic --no-input
+    
+    # Run migrations
+    uv run ./manage.py migrate
+    
+    # Start with gunicorn (production)
+    uv run gunicorn pennclubs.wsgi:application
+    ```
+  </Tab>
+  
+  <Tab title="Frontend">
+    ```bash
+    cd frontend
+    
+    # Build production bundle
+    env NODE_ENV=production bunx next build
+    
+    # Start production server
+    env NODE_ENV=production bunx next start
+    ```
+    
+    The build creates an optimized production bundle with:
+    - Static page generation
+    - Image optimization
+    - Code splitting
+    - Minification
+  </Tab>
+</Tabs>
+
+## Common Issues and Troubleshooting
+
+<AccordionGroup>
+  <Accordion title="Port Already in Use" icon="triangle-exclamation">
+    If ports 8000 or 3000 are already in use:
+    
+    ```bash
+    # Find process using port
+    lsof -i :8000  # or :3000
+    
+    # Kill the process
+    kill -9 <PID>
+    ```
+  </Accordion>
+  
+  <Accordion title="Node Version Mismatch" icon="node-js">
+    Ensure you're using Node 22:
+    
+    ```bash
+    node --version  # Should be v22.11.0
+    
+    # Switch with nvm
+    nvm use 22.11.0
+    ```
+  </Accordion>
+  
+  <Accordion title="Database Connection Errors" icon="database">
+    The development setup uses SQLite by default. If you see database errors:
+    
+    ```bash
+    cd backend
+    
+    # Delete database and start fresh
+    rm db.sqlite3
+    
+    # Recreate database
+    uv run ./manage.py migrate
+    uv run ./manage.py populate
+    ```
+  </Accordion>
+  
+  <Accordion title="Module Import Errors" icon="python">
+    If you see import errors:
+    
+    ```bash
+    # Reinstall dependencies
+    cd backend
+    uv sync --refresh
+    
+    # Or for frontend
+    cd frontend
+    rm -rf node_modules
+    bun install
+    ```
+  </Accordion>
+</AccordionGroup>
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Read the Contributing Guide" icon="code-pull-request" href="https://github.com/pennlabs/penn-clubs/blob/master/CONTRIBUTING.md">
+    Learn about our development workflow and contribution guidelines
+  </Card>
+  
+  <Card title="Explore the API" icon="book-open" href="/api-reference">
+    Browse the REST API documentation
+  </Card>
+  
+  <Card title="Join Penn Labs" icon="users" href="https://pennlabs.org/apply">
+    Apply to join our team of student developers
+  </Card>
+  
+  <Card title="Report Issues" icon="bug" href="https://github.com/pennlabs/penn-clubs/issues">
+    Found a bug? Let us know on GitHub
+  </Card>
+</CardGroup>
+
+## Additional Resources
+
+<CardGroup cols={3}>
+  <Card title="Django Docs" icon="book" href="https://docs.djangoproject.com/">
+    Django framework documentation
+  </Card>
+  
+  <Card title="Next.js Docs" icon="book" href="https://nextjs.org/docs">
+    Next.js framework documentation
+  </Card>
+  
+  <Card title="REST Framework" icon="book" href="https://www.django-rest-framework.org/">
+    Django REST Framework docs
+  </Card>
+  
+  <Card title="Bun Docs" icon="book" href="https://bun.sh/docs">
+    Bun package manager documentation
+  </Card>
+  
+  <Card title="uv Docs" icon="book" href="https://docs.astral.sh/uv/">
+    uv package manager documentation
+  </Card>
+  
+  <Card title="TypeScript Docs" icon="book" href="https://www.typescriptlang.org/docs/">
+    TypeScript language documentation
+  </Card>
+</CardGroup>

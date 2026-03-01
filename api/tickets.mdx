@@ -1,0 +1,410 @@
+---
+title: "Tickets API"
+description: "API endpoints for event ticketing and purchases"
+---
+
+## List User Tickets
+
+<CodeGroup>
+```bash GET /api/tickets/
+List all tickets owned by the authenticated user
+```
+</CodeGroup>
+
+### Authentication
+Required
+
+### Response Fields
+
+<ResponseField name="id" type="uuid" required>
+  Unique ticket identifier
+</ResponseField>
+
+<ResponseField name="showing" type="object">
+  Event showing details
+</ResponseField>
+
+<ResponseField name="event" type="object">
+  Event details
+</ResponseField>
+
+<ResponseField name="type" type="string">
+  Ticket type/category
+</ResponseField>
+
+<ResponseField name="owner" type="string">
+  Owner's full name
+</ResponseField>
+
+<ResponseField name="attended" type="boolean">
+  Whether ticket holder attended the event
+</ResponseField>
+
+<ResponseField name="price" type="decimal">
+  Ticket price in USD
+</ResponseField>
+
+### Example Request
+
+```bash
+curl https://pennclubs.com/api/tickets/ \
+  -H "Authorization: Bearer YOUR_TOKEN"
+```
+
+### Example Response
+
+```json
+[
+  {
+    "id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+    "showing": {
+      "id": 123,
+      "start_time": "2024-10-15T19:00:00Z",
+      "end_time": "2024-10-15T22:00:00Z",
+      "location": "Houston Hall"
+    },
+    "event": {
+      "id": 456,
+      "name": "Fall Gala",
+      "club": "social-club",
+      "club_name": "Penn Social Club"
+    },
+    "type": "General Admission",
+    "owner": "John Doe",
+    "attended": false,
+    "price": "15.00"
+  }
+]
+```
+
+---
+
+## Get Ticket Details
+
+<CodeGroup>
+```bash GET /api/tickets/{id}/
+Retrieve details about a specific ticket
+```
+</CodeGroup>
+
+### Authentication
+Required - must be ticket owner or club officer
+
+### Path Parameters
+
+<ParamField path="id" type="uuid" required>
+  Ticket UUID
+</ParamField>
+
+### Response
+
+Same fields as list endpoint
+
+### Example Request
+
+```bash
+curl https://pennclubs.com/api/tickets/a1b2c3d4-e5f6-7890-abcd-ef1234567890/ \
+  -H "Authorization: Bearer YOUR_TOKEN"
+```
+
+---
+
+## Get Ticket QR Code
+
+<CodeGroup>
+```bash GET /api/tickets/{id}/qr/
+Generate QR code for ticket check-in
+```
+</CodeGroup>
+
+### Authentication
+Required - must be ticket owner
+
+### Path Parameters
+
+<ParamField path="id" type="uuid" required>
+  Ticket UUID
+</ParamField>
+
+### Response
+
+Returns a PNG image of the QR code that can be scanned at the event
+
+### Example Request
+
+```bash
+curl https://pennclubs.com/api/tickets/a1b2c3d4-e5f6-7890-abcd-ef1234567890/qr/ \
+  -H "Authorization: Bearer YOUR_TOKEN" \
+  -o ticket-qr.png
+```
+
+---
+
+## Update Ticket Attendance
+
+<CodeGroup>
+```bash PATCH /api/tickets/{id}/
+Mark a ticket as attended (club officers only)
+```
+</CodeGroup>
+
+### Authentication
+Required - must be club officer for the event's club
+
+### Path Parameters
+
+<ParamField path="id" type="uuid" required>
+  Ticket UUID
+</ParamField>
+
+### Request Body
+
+<ParamField body="attended" type="boolean" required>
+  Whether ticket holder attended
+</ParamField>
+
+### Example Request
+
+```bash
+curl -X PATCH https://pennclubs.com/api/tickets/a1b2c3d4-e5f6-7890-abcd-ef1234567890/ \
+  -H "Authorization: Bearer YOUR_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"attended": true}'
+```
+
+---
+
+## View Cart
+
+<CodeGroup>
+```bash GET /api/tickets/cart/
+View tickets currently in shopping cart
+```
+</CodeGroup>
+
+### Authentication
+Required
+
+### Response Fields
+
+<ResponseField name="tickets" type="array">
+  Array of ticket objects in cart
+</ResponseField>
+
+<ResponseField name="sold_out" type="array">
+  Array of ticket types that became unavailable
+</ResponseField>
+
+Each sold_out item contains:
+- `type`: Ticket type name
+- `showing`: Showing ID
+- `event`: Event ID and name
+- `count`: Number of tickets that became unavailable
+
+### Example Request
+
+```bash
+curl https://pennclubs.com/api/tickets/cart/ \
+  -H "Authorization: Bearer YOUR_TOKEN"
+```
+
+### Example Response
+
+```json
+{
+  "tickets": [
+    {
+      "id": "temp-uuid-1",
+      "type": "General Admission",
+      "price": "15.00",
+      "showing": {
+        "id": 123,
+        "start_time": "2024-10-15T19:00:00Z"
+      },
+      "event": {
+        "id": 456,
+        "name": "Fall Gala"
+      }
+    }
+  ],
+  "sold_out": []
+}
+```
+
+---
+
+## Initiate Checkout
+
+<CodeGroup>
+```bash POST /api/tickets/initiate_checkout/
+Begin checkout process for cart tickets
+```
+</CodeGroup>
+
+### Authentication
+Required
+
+### Request Body
+
+Empty object `{}`
+
+### Response Fields
+
+<ResponseField name="success" type="boolean">
+  Whether checkout initiation succeeded
+</ResponseField>
+
+<ResponseField name="sold_free_tickets" type="boolean">
+  Whether free tickets were automatically claimed
+</ResponseField>
+
+<ResponseField name="cybersource_url" type="string">
+  CyberSource payment page URL (if paid tickets)
+</ResponseField>
+
+<ResponseField name="payment_params" type="object">
+  Payment parameters to POST to CyberSource (if paid tickets)
+</ResponseField>
+
+### Notes
+
+- For free tickets, they are automatically claimed and no payment is needed
+- For paid tickets, returns CyberSource payment form parameters
+- Tickets are held for 10 minutes during checkout
+- If cart becomes stale (tickets sold), returns 403 error
+
+### Example Request
+
+```bash
+curl -X POST https://pennclubs.com/api/tickets/initiate_checkout/ \
+  -H "Authorization: Bearer YOUR_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{}'
+```
+
+### Example Response (Free Tickets)
+
+```json
+{
+  "success": true,
+  "sold_free_tickets": true,
+  "detail": "Free tickets sold."
+}
+```
+
+### Example Response (Paid Tickets)
+
+```json
+{
+  "success": true,
+  "sold_free_tickets": false,
+  "cybersource_url": "https://secureacceptance.cybersource.com/pay",
+  "payment_params": {
+    "access_key": "abc123...",
+    "profile_id": "xyz789...",
+    "transaction_uuid": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+    "amount": "30.00",
+    "currency": "USD",
+    "signature": "..."
+  }
+}
+```
+
+---
+
+## Transfer Ticket
+
+<CodeGroup>
+```bash POST /api/tickets/{id}/transfer/
+Transfer ticket to another user
+```
+</CodeGroup>
+
+### Authentication
+Required - must be ticket owner and ticket must be transferable
+
+### Path Parameters
+
+<ParamField path="id" type="uuid" required>
+  Ticket UUID
+</ParamField>
+
+### Request Body
+
+<ParamField body="username" type="string" required>
+  Username of recipient
+</ParamField>
+
+### Response
+
+Confirmation that ticket was transferred
+
+### Example Request
+
+```bash
+curl -X POST https://pennclubs.com/api/tickets/a1b2c3d4-e5f6-7890-abcd-ef1234567890/transfer/ \
+  -H "Authorization: Bearer YOUR_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"username": "janedoe"}'
+```
+
+---
+
+## Payment Flow
+
+The ticket purchase flow for paid tickets:
+
+1. **Add tickets to cart** - User browses events and adds tickets
+2. **View cart** - `GET /api/tickets/cart/` to review tickets
+3. **Initiate checkout** - `POST /api/tickets/initiate_checkout/`
+   - Returns CyberSource payment URL and signed parameters
+   - Tickets are held for 10 minutes
+4. **Submit payment** - Frontend POSTs payment_params to cybersource_url
+5. **Payment processing** - CyberSource processes payment
+6. **Callback** - CyberSource POSTs result to `/api/tickets/payment_complete/`
+   - If successful, tickets are assigned to user
+   - If failed, holds are released
+7. **Confirmation** - User receives email with ticket QR codes
+
+### Free Tickets Flow
+
+1. Add free tickets to cart
+2. Call `POST /api/tickets/initiate_checkout/`
+3. Response has `sold_free_tickets: true`
+4. Tickets immediately assigned to user
+5. Skip payment steps
+
+---
+
+## Error Responses
+
+### Cart is Stale (403)
+
+Tickets in cart were sold or became unavailable:
+
+```json
+{
+  "success": false,
+  "detail": "Cart is stale or empty, invoke /api/tickets/cart to refresh",
+  "sold_free_tickets": false
+}
+```
+
+**Solution**: Call `GET /api/tickets/cart/` to refresh and get available tickets
+
+### Empty Cart (400)
+
+```json
+{
+  "success": false,
+  "detail": "No tickets selected for checkout.",
+  "sold_free_tickets": false
+}
+```
+
+### Payment Declined
+
+User is redirected to frontend with error in query params:
+```
+https://pennclubs.com/events/checkout?error=Your+payment+was+declined
+```

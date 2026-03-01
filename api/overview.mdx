@@ -1,0 +1,238 @@
+---
+title: "API Overview"
+description: "Learn about the Penn Clubs REST API, including base URLs, request/response formats, and conventions"
+---
+
+## Introduction
+
+The Penn Clubs API is a RESTful API built with Django REST Framework that provides access to club information, events, memberships, and more at the University of Pennsylvania.
+
+## Base URL
+
+All API requests should be made to:
+
+```
+https://pennclubs.com/api/
+```
+
+For development environments:
+
+```
+http://localhost:8000/api/
+```
+
+## API Conventions
+
+The Penn Clubs API follows REST conventions:
+
+### HTTP Methods
+
+- **GET** - Retrieve resources
+- **POST** - Create new resources
+- **PUT** - Update entire resources (all fields required)
+- **PATCH** - Partially update resources (only specified fields)
+- **DELETE** - Remove resources
+
+### Resource Naming
+
+API endpoints use plural nouns for collections:
+
+```bash
+GET /api/clubs/              # List all clubs
+GET /api/clubs/{code}/       # Get specific club
+POST /api/clubs/             # Create new club
+PATCH /api/clubs/{code}/     # Update club
+DELETE /api/clubs/{code}/    # Delete club
+```
+
+## Request Format
+
+### Content Type
+
+All POST, PUT, and PATCH requests should include:
+
+```
+Content-Type: application/json
+```
+
+### Request Body
+
+Request bodies should be formatted as JSON:
+
+```json
+{
+  "name": "Penn Labs",
+  "description": "Building technology for the Penn community",
+  "active": true
+}
+```
+
+## Response Format
+
+### Success Responses
+
+Successful responses return JSON with appropriate HTTP status codes:
+
+- **200 OK** - Request succeeded
+- **201 Created** - Resource created successfully
+- **204 No Content** - Request succeeded with no response body
+
+**Example response:**
+
+```json
+{
+  "code": "penn-labs",
+  "name": "Penn Labs",
+  "description": "Building technology for the Penn community",
+  "active": true,
+  "approved": true,
+  "favorite_count": 142
+}
+```
+
+### Error Responses
+
+Error responses include descriptive messages:
+
+<ResponseField name="detail" type="string">
+  Human-readable error message
+</ResponseField>
+
+**Example error:**
+
+```json
+{
+  "detail": "Authentication credentials were not provided."
+}
+```
+
+### Common Status Codes
+
+- **400 Bad Request** - Invalid request data
+- **401 Unauthorized** - Authentication required
+- **403 Forbidden** - Insufficient permissions
+- **404 Not Found** - Resource does not exist
+- **500 Internal Server Error** - Server error
+
+## Pagination
+
+List endpoints return paginated results:
+
+<ResponseField name="count" type="integer">
+  Total number of results
+</ResponseField>
+
+<ResponseField name="next" type="string">
+  URL to the next page (null if last page)
+</ResponseField>
+
+<ResponseField name="previous" type="string">
+  URL to the previous page (null if first page)
+</ResponseField>
+
+<ResponseField name="results" type="array">
+  Array of result objects
+</ResponseField>
+
+**Example paginated response:**
+
+```json
+{
+  "count": 487,
+  "next": "https://pennclubs.com/api/clubs/?page=2",
+  "previous": null,
+  "results": [
+    {
+      "code": "penn-labs",
+      "name": "Penn Labs",
+      "description": "Building technology for the Penn community"
+    }
+  ]
+}
+```
+
+## Filtering and Search
+
+Many endpoints support filtering via query parameters:
+
+```bash
+# Search by name
+curl "https://pennclubs.com/api/clubs/?search=labs"
+
+# Filter by active status
+curl "https://pennclubs.com/api/clubs/?active=true"
+
+# Filter by tags
+curl "https://pennclubs.com/api/clubs/?tags=technology,engineering"
+
+# Filter by badges
+curl "https://pennclubs.com/api/clubs/?badges=SAC"
+```
+
+## Ordering
+
+Control result ordering with the `ordering` parameter:
+
+```bash
+# Order by name alphabetically
+curl "https://pennclubs.com/api/clubs/?ordering=alphabetical"
+
+# Order by popularity (featured)
+curl "https://pennclubs.com/api/clubs/?ordering=featured"
+
+# Order by favorite count
+curl "https://pennclubs.com/api/clubs/?ordering=-favorite_count"
+```
+
+## Main API Resources
+
+The Penn Clubs API provides access to these primary resources:
+
+### Clubs
+- `/api/clubs/` - Club organizations and information
+- `/api/clubs/{code}/members/` - Club membership management
+- `/api/clubs/{code}/events/` - Club-specific events
+
+### Events
+- `/api/events/` - All events across clubs
+- `/api/clubfairs/` - Activities fair management
+
+### Membership
+- `/api/favorites/` - User's favorited clubs
+- `/api/subscriptions/` - User's club subscriptions
+- `/api/memberships/` - User's club memberships
+- `/api/requests/membership/` - Membership requests
+
+### Metadata
+- `/api/tags/` - Club tags and categories
+- `/api/badges/` - Club badges
+- `/api/majors/` - Academic majors
+- `/api/schools/` - Penn schools
+- `/api/years/` - Graduation years
+
+## Example Request
+
+Here's a complete example of making an authenticated request:
+
+```bash
+curl -X GET "https://pennclubs.com/api/clubs/penn-labs/" \
+  -H "Authorization: Bearer YOUR_TOKEN_HERE" \
+  -H "Content-Type: application/json"
+```
+
+## Rate Limiting
+
+The API does not currently enforce rate limiting, but clients should be respectful and avoid making excessive requests. Implement appropriate caching and throttling in your applications.
+
+## Documentation
+
+Interactive API documentation is available at:
+
+- **ReDoc**: [https://pennclubs.com/api/documentation/](https://pennclubs.com/api/documentation/)
+- **OpenAPI Schema**: [https://pennclubs.com/api/openapi/](https://pennclubs.com/api/openapi/)
+
+## Next Steps
+
+- [Authentication](/api/authentication) - Learn how to authenticate with the API
+- [Clubs Endpoints](/api/endpoints/clubs) - Explore club-related endpoints
+- [Events Endpoints](/api/endpoints/events) - Work with events data

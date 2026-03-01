@@ -1,0 +1,317 @@
+---
+title: Local Development Setup
+description: Complete guide to setting up Penn Clubs for local development
+---
+
+This guide walks you through setting up Penn Clubs on your local machine for development. Penn Clubs supports Mac and Linux/WSL development.
+
+## Prerequisites
+
+Before you begin, ensure you have the following installed:
+
+- **Python 3.13** - Required for the Django backend
+- **[uv](https://docs.astral.sh/uv/getting-started/installation/)** - Python package manager
+- **Node.js 20** - Required for the React/Next.js frontend (v20.11.1 is stable)
+- **[Bun](https://bun.sh)** - JavaScript runtime and package manager
+- **PostgreSQL** - Required for psycopg2 (Mac only, see below)
+
+<Warning>
+  Our codebase requires **Node 20** specifically. Other versions are not supported.
+</Warning>
+
+## Backend Setup
+
+The backend is a Django REST API that handles all data operations, authentication, and business logic.
+
+### Mac: Install PostgreSQL Dependencies
+
+On Mac, you need to install PostgreSQL and OpenSSL to build `psycopg2`:
+
+<Steps>
+  <Step title="Install PostgreSQL and OpenSSL">
+    ```bash
+    brew install postgresql
+    brew install openssl
+    brew unlink openssl && brew link openssl --force
+    ```
+  </Step>
+
+  <Step title="Configure environment">
+    Add OpenSSL to your PATH and configure build flags:
+    ```bash
+    echo 'export PATH="/usr/local/opt/openssl@3/bin:$PATH"' >> ~/.zshrc
+    export LDFLAGS="-L/usr/local/opt/openssl@3/lib"
+    export CPPFLAGS="-I/usr/local/opt/openssl@3/include"
+    ```
+  </Step>
+</Steps>
+
+### Linux: Install Build Dependencies
+
+On Linux, install Python development packages and PostgreSQL libraries:
+
+```bash
+sudo add-apt-repository ppa:deadsnakes/ppa
+sudo apt-get update
+sudo apt-get install gcc python3.13-dev libpq-dev
+```
+
+### Install Backend Dependencies
+
+<Steps>
+  <Step title="Navigate to backend directory">
+    ```bash
+    cd backend
+    ```
+  </Step>
+
+  <Step title="Install Python dependencies">
+    This may take a few minutes on first run:
+    ```bash
+    uv sync
+    ```
+  </Step>
+
+  <Step title="Install pre-commit hooks">
+    ```bash
+    uv run pre-commit install
+    ```
+  </Step>
+
+  <Step title="Run database migrations">
+    ```bash
+    uv run ./manage.py migrate
+    ```
+  </Step>
+
+  <Step title="Populate database with test data">
+    This creates dummy data for development, including a test user:
+    ```bash
+    uv run ./manage.py populate
+    ```
+  </Step>
+
+  <Step title="Start the development server">
+    ```bash
+    uv run ./manage.py runserver
+    ```
+    
+    The backend will be available at [http://localhost:8000](http://localhost:8000)
+  </Step>
+</Steps>
+
+### Test User Credentials
+
+The `populate` command creates a test user:
+- **Username**: `bfranklin`
+- **Password**: `test`
+
+Access the Django admin at [http://localhost:8000/api/admin](http://localhost:8000/api/admin)
+
+## Frontend Setup
+
+The frontend is a Next.js application built with React that provides the user interface.
+
+<Steps>
+  <Step title="Open a new terminal">
+    Keep your backend server running and open a new terminal window.
+  </Step>
+
+  <Step title="Navigate to frontend directory">
+    ```bash
+    cd frontend
+    ```
+  </Step>
+
+  <Step title="Install dependencies">
+    <CodeGroup>
+      ```bash bun
+      bun install
+      ```
+
+      ```bash npm
+      npm install
+      ```
+
+      ```bash yarn
+      yarn install
+      ```
+    </CodeGroup>
+  </Step>
+
+  <Step title="Start the development server">
+    <CodeGroup>
+      ```bash bun
+      bun dev
+      ```
+
+      ```bash npm
+      npm run dev
+      ```
+
+      ```bash yarn
+      yarn dev
+      ```
+    </CodeGroup>
+    
+    The frontend will be available at [http://localhost:3000](http://localhost:3000)
+  </Step>
+</Steps>
+
+## Environment Variables
+
+### Development Environment Variables
+
+For local development, most variables have sensible defaults. Create a `.env` file in the `backend` directory if you need to customize settings.
+
+#### Optional Development Variables
+
+- `NGROK_URL` - Required for testing CyberSource payment flows (see Payment Testing below)
+- `CYBERSOURCE_SA_PROFILE_ID` - CyberSource test profile ID
+- `CYBERSOURCE_SA_ACCESS_KEY` - CyberSource test access key
+- `CYBERSOURCE_SA_SECRET_KEY` - CyberSource test secret key
+
+### Production Environment Variables
+
+<Warning>
+  These variables must be set in production environments.
+</Warning>
+
+#### Backend Variables
+
+- `SECRET_KEY` - Django secret key for cryptographic signing
+- `DATABASE_URL` - PostgreSQL connection string
+- `SENTRY_URL` - Sentry DSN for error tracking
+- `AWS_ACCESS_KEY_ID` - AWS access key for S3 file storage
+- `AWS_SECRET_ACCESS_KEY` - AWS secret key
+- `AWS_STORAGE_BUCKET_NAME` - S3 bucket name
+- `LABS_REDIRECT_URI` - OAuth redirect URI
+- `LABS_CLIENT_ID` - Platform OAuth client ID
+- `LABS_CLIENT_SECRET` - Platform OAuth client secret
+- `REDIS_HOST` - Redis host for caching and channels
+- `EMAIL_HOST` - SMTP server hostname
+- `EMAIL_USERNAME` - SMTP username
+- `EMAIL_PASSWORD` - SMTP password
+
+#### Frontend Variables
+
+- `NEXT_PUBLIC_GOOGLE_API_KEY` - Google Maps API key
+- `NEXT_PUBLIC_SITE_NAME` - Site branding (`clubs` for Penn Clubs, `fyh` for Hub@Penn)
+
+#### Ticketing/Payment Variables
+
+For CyberSource Secure Acceptance Hosted Checkout:
+
+- `CYBERSOURCE_SA_PROFILE_ID` - Secure Acceptance profile ID
+- `CYBERSOURCE_SA_ACCESS_KEY` - Access key for the profile
+- `CYBERSOURCE_SA_SECRET_KEY` - Secret key for signing requests
+- `FRONTEND_URL` - Base URL for post-payment redirects (defaults to `https://pennclubs.com`)
+
+## Payment Testing with ngrok
+
+To test the ticketing/payment flow locally, you need a publicly accessible URL for CyberSource callbacks.
+
+<Steps>
+  <Step title="Install ngrok">
+    <CodeGroup>
+      ```bash Ubuntu/Debian
+      curl -sSL https://ngrok-agent.s3.amazonaws.com/ngrok.asc \
+        | sudo tee /etc/apt/trusted.gpg.d/ngrok.asc >/dev/null \
+        && echo "deb https://ngrok-agent.s3.amazonaws.com buster main" \
+        | sudo tee /etc/apt/sources.list.d/ngrok.list \
+        && sudo apt update && sudo apt install ngrok
+      ```
+
+      ```bash Snap
+      sudo snap install ngrok
+      ```
+
+      ```bash Mac
+      brew install ngrok
+      ```
+    </CodeGroup>
+  </Step>
+
+  <Step title="Start ngrok tunnel">
+    In a separate terminal:
+    ```bash
+    ngrok http 3000
+    ```
+    
+    Copy the HTTPS forwarding URL (e.g., `https://abc123.ngrok-free.app`)
+  </Step>
+
+  <Step title="Configure environment variables">
+    Create `backend/.env` with your ngrok URL and CyberSource test credentials:
+    ```bash
+    CYBERSOURCE_SA_PROFILE_ID=your-test-profile-id
+    CYBERSOURCE_SA_ACCESS_KEY=your-test-access-key
+    CYBERSOURCE_SA_SECRET_KEY=your-test-secret-key
+    NGROK_URL=https://abc123.ngrok-free.app
+    ```
+  </Step>
+
+  <Step title="Start both servers">
+    Start the backend:
+    ```bash
+    cd backend
+    DJANGO_SETTINGS_MODULE=pennclubs.settings.development uv run ./manage.py runserver
+    ```
+    
+    Start the frontend in another terminal:
+    ```bash
+    cd frontend
+    bun dev
+    ```
+  </Step>
+
+  <Step title="Access the application">
+    Access at [http://localhost:3000](http://localhost:3000) (NOT the ngrok URL)
+  </Step>
+</Steps>
+
+<Note>
+  The `NGROK_URL` variable configures the CyberSource callback URL and adds the ngrok URL to `CSRF_TRUSTED_ORIGINS`. Always use `http://localhost:3000` in your browser for proper session handling.
+</Note>
+
+### CyberSource Test Credentials
+
+To obtain CyberSource test credentials:
+
+1. Log into the [CyberSource Business Center](https://businesscenter.cybersource.com)
+2. Navigate to Payment Configuration → Secure Acceptance Settings
+3. Create or select a Hosted Checkout profile
+4. Generate security keys and note the Profile ID, Access Key, and Secret Key
+
+Use [CyberSource test card numbers](https://developer.cybersource.com/hello-world/testing-guide.html) for testing payments.
+
+## Troubleshooting
+
+### psycopg2 Build Errors (Mac)
+
+If you encounter errors building `psycopg2`, ensure you've followed the Mac PostgreSQL setup steps and exported the `LDFLAGS` and `CPPFLAGS` environment variables.
+
+### Node Version Issues
+
+Verify you're using Node 20:
+```bash
+node --version
+```
+
+If you have a different version, use [nvm](https://github.com/nvm-sh/nvm) to install Node 20:
+```bash
+nvm install 20
+nvm use 20
+```
+
+### Port Already in Use
+
+If port 8000 or 3000 is already in use:
+- Backend: `uv run ./manage.py runserver 8001`
+- Frontend: Update `package.json` proxy setting to match your backend port
+
+## Next Steps
+
+- Read the [Architecture Overview](/development/architecture) to understand the system design
+- Learn how to run tests in the [Testing Guide](/development/testing)
+- Check out the [Deployment Guide](/development/deployment) for production deployment

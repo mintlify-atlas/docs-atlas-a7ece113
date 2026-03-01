@@ -1,0 +1,415 @@
+---
+title: "Clubs API"
+description: "API endpoints for managing and retrieving club information"
+---
+
+## List Clubs
+
+<CodeGroup>
+```bash GET /api/clubs/
+List all clubs with filtering, search, and pagination
+```
+</CodeGroup>
+
+### Authentication
+Optional - authenticated users see additional details and membership information
+
+### Query Parameters
+
+<ParamField query="search" type="string">
+  Search clubs by name, subtitle, code, or terms
+</ParamField>
+
+<ParamField query="ordering" type="string">
+  Order results by field. Options: `featured`, `alphabetical`, `random`, `favorite_count`, `name`
+</ParamField>
+
+<ParamField query="tags" type="string">
+  Filter by tag names (comma-separated)
+</ParamField>
+
+<ParamField query="badges" type="string">
+  Filter by badge IDs or labels (comma-separated)
+</ParamField>
+
+<ParamField query="active" type="boolean">
+  Filter by active status
+</ParamField>
+
+<ParamField query="accepting_members" type="boolean">
+  Filter clubs accepting new members
+</ParamField>
+
+<ParamField query="application_required" type="integer">
+  Filter by application type (1=Open, 2=Audition, 3=Tryout, 4=Application, 5=Application+Interview)
+</ParamField>
+
+<ParamField query="size" type="integer">
+  Filter by club size (1=1-20, 2=21-50, 3=51-100, 4=101+)
+</ParamField>
+
+<ParamField query="recruiting_cycle" type="integer">
+  Filter by recruiting cycle (1=Unknown, 2=Fall, 3=Spring, 4=Both, 5=Open)
+</ParamField>
+
+<ParamField query="available_virtually" type="boolean">
+  Filter clubs available virtually
+</ParamField>
+
+<ParamField query="enables_subscription" type="boolean">
+  Filter clubs that allow subscriptions
+</ParamField>
+
+### Response Fields
+
+<ResponseField name="code" type="string" required>
+  Unique club identifier code
+</ResponseField>
+
+<ResponseField name="name" type="string" required>
+  Club name
+</ResponseField>
+
+<ResponseField name="subtitle" type="string">
+  Short description shown in preview cards
+</ResponseField>
+
+<ResponseField name="description" type="string">
+  Full HTML description of the club
+</ResponseField>
+
+<ResponseField name="active" type="boolean">
+  Whether the club is currently active
+</ResponseField>
+
+<ResponseField name="approved" type="boolean">
+  Club approval status
+</ResponseField>
+
+<ResponseField name="email" type="string">
+  Club contact email (may be hidden)
+</ResponseField>
+
+<ResponseField name="image_url" type="string">
+  URL to club logo/image
+</ResponseField>
+
+<ResponseField name="founded" type="date">
+  Date club was founded
+</ResponseField>
+
+<ResponseField name="size" type="integer">
+  Club size category
+</ResponseField>
+
+<ResponseField name="accepting_members" type="boolean">
+  Whether club is currently accepting new members
+</ResponseField>
+
+<ResponseField name="application_required" type="integer">
+  Application/audition requirement type
+</ResponseField>
+
+<ResponseField name="recruiting_cycle" type="integer">
+  When club recruits new members
+</ResponseField>
+
+<ResponseField name="available_virtually" type="boolean">
+  Club activities available online
+</ResponseField>
+
+<ResponseField name="appointment_needed" type="boolean">
+  Whether appointments are needed
+</ResponseField>
+
+<ResponseField name="enables_subscription" type="boolean">
+  Club allows email subscriptions
+</ResponseField>
+
+<ResponseField name="favorite_count" type="integer">
+  Number of users who favorited this club
+</ResponseField>
+
+<ResponseField name="membership_count" type="integer">
+  Number of members in the club
+</ResponseField>
+
+<ResponseField name="is_favorite" type="boolean">
+  Whether authenticated user favorited this club
+</ResponseField>
+
+<ResponseField name="is_subscribe" type="boolean">
+  Whether authenticated user subscribed to this club
+</ResponseField>
+
+<ResponseField name="is_member" type="integer">
+  User's membership role (0=Owner, 10=Officer, 20=Member, null=Not a member)
+</ResponseField>
+
+<ResponseField name="tags" type="array">
+  Array of tag objects with id and name
+</ResponseField>
+
+### Example Request
+
+```bash
+curl https://pennclubs.com/api/clubs/?search=tech&ordering=featured&active=true
+```
+
+### Example Response
+
+```json
+{
+  "count": 150,
+  "next": "https://pennclubs.com/api/clubs/?page=2",
+  "previous": null,
+  "results": [
+    {
+      "code": "pppjo",
+      "name": "Penn Labs",
+      "subtitle": "Building software for the Penn community",
+      "active": true,
+      "approved": true,
+      "email": "contact@pennlabs.org",
+      "image_url": "https://pennclubs.com/media/clubs/pppjo.png",
+      "size": 2,
+      "accepting_members": true,
+      "application_required": 4,
+      "recruiting_cycle": 2,
+      "available_virtually": false,
+      "enables_subscription": true,
+      "favorite_count": 245,
+      "is_favorite": false,
+      "is_subscribe": false,
+      "is_member": null,
+      "tags": [
+        {"id": 1, "name": "Technology"},
+        {"id": 5, "name": "Engineering"}
+      ]
+    }
+  ]
+}
+```
+
+---
+
+## Get Club Details
+
+<CodeGroup>
+```bash GET /api/clubs/{code}/
+Retrieve detailed information about a specific club
+```
+</CodeGroup>
+
+### Path Parameters
+
+<ParamField path="code" type="string" required>
+  Club code identifier
+</ParamField>
+
+### Response Fields
+
+Includes all fields from list endpoint plus:
+
+<ResponseField name="members" type="array">
+  Array of club members (visible to authenticated users)
+</ResponseField>
+
+<ResponseField name="events" type="array">
+  Upcoming events hosted by the club
+</ResponseField>
+
+<ResponseField name="testimonials" type="array">
+  Club testimonials
+</ResponseField>
+
+<ResponseField name="badges" type="array">
+  Special badges assigned to the club
+</ResponseField>
+
+<ResponseField name="facebook" type="string">
+  Facebook page URL
+</ResponseField>
+
+<ResponseField name="website" type="string">
+  Club website URL
+</ResponseField>
+
+<ResponseField name="twitter" type="string">
+  Twitter profile URL
+</ResponseField>
+
+<ResponseField name="instagram" type="string">
+  Instagram profile URL
+</ResponseField>
+
+<ResponseField name="linkedin" type="string">
+  LinkedIn page URL
+</ResponseField>
+
+<ResponseField name="github" type="string">
+  GitHub organization URL
+</ResponseField>
+
+<ResponseField name="youtube" type="string">
+  YouTube channel URL
+</ResponseField>
+
+<ResponseField name="how_to_get_involved" type="string">
+  HTML content on how to join
+</ResponseField>
+
+### Example Request
+
+```bash
+curl https://pennclubs.com/api/clubs/pppjo/
+```
+
+---
+
+## Create Club
+
+<CodeGroup>
+```bash POST /api/clubs/
+Create a new club (requires authentication)
+```
+</CodeGroup>
+
+### Authentication
+Required - user will become club owner
+
+### Request Body
+
+<ParamField body="name" type="string" required>
+  Club name (must be unique)
+</ParamField>
+
+<ParamField body="code" type="string">
+  Club code (auto-generated from name if not provided)
+</ParamField>
+
+<ParamField body="description" type="string" required>
+  Full club description (HTML allowed)
+</ParamField>
+
+<ParamField body="subtitle" type="string">
+  Short description (max 255 characters)
+</ParamField>
+
+<ParamField body="email" type="string">
+  Contact email address
+</ParamField>
+
+<ParamField body="size" type="integer">
+  Club size (1-4)
+</ParamField>
+
+<ParamField body="accepting_members" type="boolean">
+  Currently accepting new members
+</ParamField>
+
+<ParamField body="application_required" type="integer">
+  Application requirement type (1-5)
+</ParamField>
+
+### Example Request
+
+```bash
+curl -X POST https://pennclubs.com/api/clubs/ \
+  -H "Authorization: Bearer YOUR_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "New Tech Club",
+    "description": "<p>A club for technology enthusiasts</p>",
+    "subtitle": "Exploring technology together",
+    "email": "contact@techclub.com",
+    "size": 2,
+    "accepting_members": true,
+    "application_required": 1
+  }'
+```
+
+---
+
+## Update Club
+
+<CodeGroup>
+```bash PATCH /api/clubs/{code}/
+Update club information (requires officer+ permissions)
+```
+</CodeGroup>
+
+### Authentication
+Required - must be club officer or owner
+
+### Path Parameters
+
+<ParamField path="code" type="string" required>
+  Club code identifier
+</ParamField>
+
+### Request Body
+
+Same fields as create endpoint (all optional for PATCH)
+
+### Example Request
+
+```bash
+curl -X PATCH https://pennclubs.com/api/clubs/pppjo/ \
+  -H "Authorization: Bearer YOUR_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "accepting_members": false,
+    "subtitle": "Updated description"
+  }'
+```
+
+---
+
+## Club Members
+
+<CodeGroup>
+```bash GET /api/clubs/{code}/members/
+List club members
+```
+</CodeGroup>
+
+### Authentication
+Required
+
+### Response Fields
+
+<ResponseField name="name" type="string">
+  Member's full name
+</ResponseField>
+
+<ResponseField name="username" type="string">
+  Member's username
+</ResponseField>
+
+<ResponseField name="email" type="string">
+  Member's email (visible to club officers)
+</ResponseField>
+
+<ResponseField name="role" type="integer">
+  Membership role (0=Owner, 10=Officer, 20=Member)
+</ResponseField>
+
+<ResponseField name="title" type="string">
+  Custom title/position
+</ResponseField>
+
+<ResponseField name="public" type="boolean">
+  Whether membership is publicly visible
+</ResponseField>
+
+<ResponseField name="active" type="boolean">
+  Whether member is currently active
+</ResponseField>
+
+### Example Request
+
+```bash
+curl https://pennclubs.com/api/clubs/pppjo/members/ \
+  -H "Authorization: Bearer YOUR_TOKEN"
+```

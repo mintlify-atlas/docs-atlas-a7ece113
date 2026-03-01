@@ -1,0 +1,578 @@
+---
+title: "Applications API"
+description: "API endpoints for club applications and submissions"
+---
+
+## List Club Applications
+
+<CodeGroup>
+```bash GET /api/clubs/{club_code}/applications/
+List all applications for a club
+```
+</CodeGroup>
+
+### Authentication
+Required - must be club officer or owner
+
+### Path Parameters
+
+<ParamField path="club_code" type="string" required>
+  Club code identifier
+</ParamField>
+
+### Response Fields
+
+<ResponseField name="id" type="integer" required>
+  Application ID
+</ResponseField>
+
+<ResponseField name="name" type="string">
+  Application name
+</ResponseField>
+
+<ResponseField name="description" type="string">
+  Application description (HTML)
+</ResponseField>
+
+<ResponseField name="application_start_time" type="datetime">
+  When application opens
+</ResponseField>
+
+<ResponseField name="application_end_time" type="datetime">
+  When application closes
+</ResponseField>
+
+<ResponseField name="result_release_time" type="datetime">
+  When results are released
+</ResponseField>
+
+<ResponseField name="is_active" type="boolean">
+  Whether application is currently active
+</ResponseField>
+
+<ResponseField name="external_url" type="string">
+  External application URL
+</ResponseField>
+
+<ResponseField name="acceptance_email" type="string">
+  Email template for accepted applicants
+</ResponseField>
+
+<ResponseField name="rejection_email" type="string">
+  Email template for rejected applicants
+</ResponseField>
+
+<ResponseField name="committees" type="array">
+  Array of application committees
+</ResponseField>
+
+<ResponseField name="questions" type="array">
+  Array of application questions
+</ResponseField>
+
+### Example Request
+
+```bash
+curl https://pennclubs.com/api/clubs/pppjo/applications/ \
+  -H "Authorization: Bearer YOUR_TOKEN"
+```
+
+### Example Response
+
+```json
+[
+  {
+    "id": 42,
+    "name": "Fall 2024 Recruitment",
+    "description": "<p>Join our team!</p>",
+    "application_start_time": "2024-09-01T00:00:00Z",
+    "application_end_time": "2024-09-15T23:59:59Z",
+    "result_release_time": "2024-09-20T18:00:00Z",
+    "is_active": true,
+    "external_url": "https://pennclubs.com/club/pppjo/application/42",
+    "committees": [
+      {"id": 1, "name": "Engineering"},
+      {"id": 2, "name": "Design"}
+    ],
+    "questions": [
+      {
+        "id": 100,
+        "question_type": 1,
+        "prompt": "Why do you want to join?",
+        "word_limit": 200,
+        "precedence": 0
+      }
+    ]
+  }
+]
+```
+
+---
+
+## Get Application Details
+
+<CodeGroup>
+```bash GET /api/clubs/{club_code}/applications/{id}/
+Retrieve detailed information about a specific application
+```
+</CodeGroup>
+
+### Authentication
+Required
+
+### Path Parameters
+
+<ParamField path="club_code" type="string" required>
+  Club code identifier
+</ParamField>
+
+<ParamField path="id" type="integer" required>
+  Application ID
+</ParamField>
+
+### Response
+
+Same fields as list endpoint
+
+### Example Request
+
+```bash
+curl https://pennclubs.com/api/clubs/pppjo/applications/42/ \
+  -H "Authorization: Bearer YOUR_TOKEN"
+```
+
+---
+
+## Get Current Applications
+
+<CodeGroup>
+```bash GET /api/clubs/{club_code}/applications/current/
+Get currently active applications for a club
+```
+</CodeGroup>
+
+### Authentication
+Required
+
+### Path Parameters
+
+<ParamField path="club_code" type="string" required>
+  Club code identifier
+</ParamField>
+
+### Response
+
+Array of active application objects (applications currently accepting submissions)
+
+### Example Request
+
+```bash
+curl https://pennclubs.com/api/clubs/pppjo/applications/current/ \
+  -H "Authorization: Bearer YOUR_TOKEN"
+```
+
+---
+
+## Create Application
+
+<CodeGroup>
+```bash POST /api/clubs/{club_code}/applications/
+Create a new application for the club
+```
+</CodeGroup>
+
+### Authentication
+Required - must be club officer or owner
+
+### Path Parameters
+
+<ParamField path="club_code" type="string" required>
+  Club code identifier
+</ParamField>
+
+### Request Body
+
+<ParamField body="name" type="string" required>
+  Application name
+</ParamField>
+
+<ParamField body="description" type="string">
+  Application description (HTML)
+</ParamField>
+
+<ParamField body="application_start_time" type="datetime" required>
+  When application opens (ISO 8601 format)
+</ParamField>
+
+<ParamField body="application_end_time" type="datetime" required>
+  When application closes
+</ParamField>
+
+<ParamField body="result_release_time" type="datetime" required>
+  When results are released
+</ParamField>
+
+<ParamField body="is_active" type="boolean">
+  Whether application is active (default: false)
+</ParamField>
+
+<ParamField body="acceptance_email" type="string">
+  Email template for accepted applicants (Jinja2 template)
+</ParamField>
+
+<ParamField body="rejection_email" type="string">
+  Email template for rejected applicants (Jinja2 template)
+</ParamField>
+
+### Example Request
+
+```bash
+curl -X POST https://pennclubs.com/api/clubs/pppjo/applications/ \
+  -H "Authorization: Bearer YOUR_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "Spring 2025 Recruitment",
+    "description": "<p>Join our amazing team!</p>",
+    "application_start_time": "2025-01-15T00:00:00Z",
+    "application_end_time": "2025-02-01T23:59:59Z",
+    "result_release_time": "2025-02-10T18:00:00Z",
+    "is_active": true
+  }'
+```
+
+---
+
+## Update Application
+
+<CodeGroup>
+```bash PATCH /api/clubs/{club_code}/applications/{id}/
+Update an existing application
+```
+</CodeGroup>
+
+### Authentication
+Required - must be club officer or owner
+
+### Path Parameters
+
+<ParamField path="club_code" type="string" required>
+  Club code identifier
+</ParamField>
+
+<ParamField path="id" type="integer" required>
+  Application ID
+</ParamField>
+
+### Request Body
+
+Same fields as create endpoint (all optional for PATCH)
+
+---
+
+## Delete Application
+
+<CodeGroup>
+```bash DELETE /api/clubs/{club_code}/applications/{id}/
+Delete an application
+```
+</CodeGroup>
+
+### Authentication
+Required - must be club officer or owner
+
+### Path Parameters
+
+<ParamField path="club_code" type="string" required>
+  Club code identifier
+</ParamField>
+
+<ParamField path="id" type="integer" required>
+  Application ID
+</ParamField>
+
+---
+
+## Application Questions
+
+<CodeGroup>
+```bash GET /api/clubs/{club_code}/applications/{application_id}/questions/
+List questions for an application
+```
+</CodeGroup>
+
+### Authentication
+Required
+
+### Path Parameters
+
+<ParamField path="club_code" type="string" required>
+  Club code identifier
+</ParamField>
+
+<ParamField path="application_id" type="integer" required>
+  Application ID
+</ParamField>
+
+### Response Fields
+
+<ResponseField name="id" type="integer">
+  Question ID
+</ResponseField>
+
+<ResponseField name="question_type" type="integer">
+  Question type (1=Free Response, 2=Multiple Choice, 3=Short Answer, 4=Info Text)
+</ResponseField>
+
+<ResponseField name="prompt" type="string">
+  Question prompt/text
+</ResponseField>
+
+<ResponseField name="word_limit" type="integer">
+  Word limit for response
+</ResponseField>
+
+<ResponseField name="precedence" type="integer">
+  Display order (lower numbers shown first)
+</ResponseField>
+
+<ResponseField name="committee_question" type="boolean">
+  Whether question is committee-specific
+</ResponseField>
+
+<ResponseField name="committees" type="array">
+  Array of committee IDs this question applies to
+</ResponseField>
+
+<ResponseField name="multiple_choice" type="array">
+  Array of multiple choice options (for question_type=2)
+</ResponseField>
+
+---
+
+## Create Application Question
+
+<CodeGroup>
+```bash POST /api/clubs/{club_code}/applications/{application_id}/questions/
+Add a question to an application
+```
+</CodeGroup>
+
+### Authentication
+Required - must be club officer or owner
+
+### Request Body
+
+<ParamField body="question_type" type="integer" required>
+  Question type (1=Free Response, 2=Multiple Choice, 3=Short Answer, 4=Info Text)
+</ParamField>
+
+<ParamField body="prompt" type="string" required>
+  Question prompt/text
+</ParamField>
+
+<ParamField body="word_limit" type="integer">
+  Word limit for response (default: 0 = no limit)
+</ParamField>
+
+<ParamField body="precedence" type="integer">
+  Display order (default: 0)
+</ParamField>
+
+<ParamField body="committee_question" type="boolean">
+  Whether question is committee-specific (default: false)
+</ParamField>
+
+### Example Request
+
+```bash
+curl -X POST https://pennclubs.com/api/clubs/pppjo/applications/42/questions/ \
+  -H "Authorization: Bearer YOUR_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "question_type": 1,
+    "prompt": "Tell us about your relevant experience",
+    "word_limit": 300,
+    "precedence": 1
+  }'
+```
+
+---
+
+## Application Submissions
+
+<CodeGroup>
+```bash GET /api/clubs/{club_code}/applications/{application_id}/submissions/
+List all submissions for an application
+```
+</CodeGroup>
+
+### Authentication
+Required - must be club officer or owner
+
+### Path Parameters
+
+<ParamField path="club_code" type="string" required>
+  Club code identifier
+</ParamField>
+
+<ParamField path="application_id" type="integer" required>
+  Application ID
+</ParamField>
+
+### Response Fields
+
+<ResponseField name="id" type="integer">
+  Submission ID
+</ResponseField>
+
+<ResponseField name="user" type="object">
+  Applicant user information
+</ResponseField>
+
+<ResponseField name="status" type="integer">
+  Submission status (1=Pending, 2=Rejected after written, 3=Rejected after interview, 4=Accepted)
+</ResponseField>
+
+<ResponseField name="reason" type="string">
+  Decision reason/feedback
+</ResponseField>
+
+<ResponseField name="committee" type="object">
+  Committee applied to
+</ResponseField>
+
+<ResponseField name="responses" type="array">
+  Array of question responses
+</ResponseField>
+
+<ResponseField name="notified" type="boolean">
+  Whether applicant has been emailed
+</ResponseField>
+
+<ResponseField name="created_at" type="datetime">
+  Submission timestamp
+</ResponseField>
+
+---
+
+## Submit Application
+
+<CodeGroup>
+```bash POST /api/clubs/{club_code}/applications/{application_id}/submissions/
+Submit an application
+```
+</CodeGroup>
+
+### Authentication
+Required
+
+### Request Body
+
+<ParamField body="committee" type="integer">
+  Committee ID to apply to
+</ParamField>
+
+<ParamField body="responses" type="array" required>
+  Array of question responses
+</ParamField>
+
+Each response should have:
+- `question`: Question ID
+- `text`: Response text (for free response/short answer)
+- `multiple_choice`: Multiple choice option ID (for multiple choice)
+
+### Example Request
+
+```bash
+curl -X POST https://pennclubs.com/api/clubs/pppjo/applications/42/submissions/ \
+  -H "Authorization: Bearer YOUR_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "committee": 1,
+    "responses": [
+      {
+        "question": 100,
+        "text": "I have experience with Python and Django..."
+      },
+      {
+        "question": 101,
+        "multiple_choice": 5
+      }
+    ]
+  }'
+```
+
+---
+
+## Update Submission Status
+
+<CodeGroup>
+```bash PATCH /api/clubs/{club_code}/applications/{application_id}/submissions/{id}/
+Update submission status and feedback
+```
+</CodeGroup>
+
+### Authentication
+Required - must be club officer or owner
+
+### Request Body
+
+<ParamField body="status" type="integer">
+  New status (1=Pending, 2=Rejected after written, 3=Rejected after interview, 4=Accepted)
+</ParamField>
+
+<ParamField body="reason" type="string">
+  Decision reason/feedback to send to applicant
+</ParamField>
+
+### Example Request
+
+```bash
+curl -X PATCH https://pennclubs.com/api/clubs/pppjo/applications/42/submissions/123/ \
+  -H "Authorization: Bearer YOUR_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "status": 4,
+    "reason": "Congratulations! We were impressed by your experience."
+  }'
+```
+
+---
+
+## Send Decision Emails
+
+<CodeGroup>
+```bash POST /api/clubs/{club_code}/applications/{application_id}/send_emails/
+Send acceptance/rejection emails to applicants
+```
+</CodeGroup>
+
+### Authentication
+Required - must be club officer or owner
+
+### Request Body
+
+<ParamField body="email_type" type="object" required>
+  Email type to send (id: "acceptance" or "rejection")
+</ParamField>
+
+<ParamField body="allow_resend" type="boolean">
+  Allow re-sending to already notified applicants (default: false)
+</ParamField>
+
+<ParamField body="dry_run" type="boolean">
+  Preview emails without sending (default: false)
+</ParamField>
+
+### Example Request
+
+```bash
+curl -X POST https://pennclubs.com/api/clubs/pppjo/applications/42/send_emails/ \
+  -H "Authorization: Bearer YOUR_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "email_type": {"id": "acceptance"},
+    "allow_resend": false,
+    "dry_run": true
+  }'
+```

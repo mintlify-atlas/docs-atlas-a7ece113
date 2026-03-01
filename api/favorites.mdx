@@ -1,0 +1,374 @@
+---
+title: "Favorites & Subscriptions API"
+description: "API endpoints for favoriting clubs and managing email subscriptions"
+---
+
+## List User Favorites
+
+<CodeGroup>
+```bash GET /api/favorites/
+List all clubs the authenticated user has favorited
+```
+</CodeGroup>
+
+### Authentication
+Required
+
+### Response Fields
+
+<ResponseField name="club" type="object" required>
+  Full club object (uses ClubListSerializer)
+</ResponseField>
+
+<ResponseField name="person" type="integer">
+  User ID (hidden in response)
+</ResponseField>
+
+<ResponseField name="created_at" type="datetime">
+  When club was favorited
+</ResponseField>
+
+### Example Request
+
+```bash
+curl https://pennclubs.com/api/favorites/ \
+  -H "Authorization: Bearer YOUR_TOKEN"
+```
+
+### Example Response
+
+```json
+[
+  {
+    "club": {
+      "code": "pppjo",
+      "name": "Penn Labs",
+      "subtitle": "Building software for the Penn community",
+      "image_url": "https://pennclubs.com/media/clubs/pppjo.png",
+      "active": true,
+      "tags": [{"id": 1, "name": "Technology"}]
+    },
+    "created_at": "2024-09-01T12:00:00Z"
+  }
+]
+```
+
+---
+
+## Favorite a Club
+
+<CodeGroup>
+```bash POST /api/favorites/
+Add a club to user's favorites
+```
+</CodeGroup>
+
+### Authentication
+Required
+
+### Request Body
+
+<ParamField body="club" type="string" required>
+  Club code to favorite
+</ParamField>
+
+### Response
+
+Returns the created favorite object
+
+### Example Request
+
+```bash
+curl -X POST https://pennclubs.com/api/favorites/ \
+  -H "Authorization: Bearer YOUR_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"club": "pppjo"}'
+```
+
+### Example Response
+
+```json
+{
+  "club": {
+    "code": "pppjo",
+    "name": "Penn Labs",
+    "subtitle": "Building software for the Penn community"
+  },
+  "created_at": "2024-09-15T14:30:00Z"
+}
+```
+
+---
+
+## Unfavorite a Club
+
+<CodeGroup>
+```bash DELETE /api/favorites/{id}/
+Remove a club from user's favorites
+```
+</CodeGroup>
+
+### Authentication
+Required
+
+### Path Parameters
+
+<ParamField path="id" type="integer" required>
+  Favorite ID
+</ParamField>
+
+### Response
+
+Returns 204 No Content on success
+
+### Example Request
+
+```bash
+curl -X DELETE https://pennclubs.com/api/favorites/123/ \
+  -H "Authorization: Bearer YOUR_TOKEN"
+```
+
+---
+
+## Get Favorite Events Calendar
+
+<CodeGroup>
+```bash GET /api/favouriteevents/
+Get iCalendar feed of events from favorited clubs
+```
+</CodeGroup>
+
+### Authentication
+Required
+
+### Response
+
+Returns iCalendar (.ics) format feed containing events from all favorited clubs
+
+### Example Request
+
+```bash
+curl https://pennclubs.com/api/favouriteevents/ \
+  -H "Authorization: Bearer YOUR_TOKEN"
+```
+
+---
+
+## List User Subscriptions
+
+<CodeGroup>
+```bash GET /api/subscriptions/
+List all clubs the authenticated user is subscribed to
+```
+</CodeGroup>
+
+### Authentication
+Required
+
+### Response Fields
+
+<ResponseField name="club" type="object" required>
+  Full club object
+</ResponseField>
+
+<ResponseField name="person" type="integer">
+  User ID (hidden)
+</ResponseField>
+
+<ResponseField name="created_at" type="datetime">
+  When user subscribed
+</ResponseField>
+
+### Example Request
+
+```bash
+curl https://pennclubs.com/api/subscriptions/ \
+  -H "Authorization: Bearer YOUR_TOKEN"
+```
+
+### Example Response
+
+```json
+[
+  {
+    "club": {
+      "code": "pppjo",
+      "name": "Penn Labs",
+      "enables_subscription": true
+    },
+    "created_at": "2024-08-20T10:15:00Z"
+  }
+]
+```
+
+---
+
+## Subscribe to Club
+
+<CodeGroup>
+```bash POST /api/subscriptions/
+Subscribe to a club's email updates
+```
+</CodeGroup>
+
+### Authentication
+Required
+
+### Request Body
+
+<ParamField body="club" type="string" required>
+  Club code to subscribe to
+</ParamField>
+
+### Response
+
+Returns the created subscription object
+
+### Notes
+
+- Club must have `enables_subscription: true`
+- User's email will be visible to club officers
+- Club can send recruitment and event updates to subscribers
+
+### Example Request
+
+```bash
+curl -X POST https://pennclubs.com/api/subscriptions/ \
+  -H "Authorization: Bearer YOUR_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"club": "pppjo"}'
+```
+
+---
+
+## Unsubscribe from Club
+
+<CodeGroup>
+```bash DELETE /api/subscriptions/{id}/
+Unsubscribe from a club's emails
+```
+</CodeGroup>
+
+### Authentication
+Required
+
+### Path Parameters
+
+<ParamField path="id" type="integer" required>
+  Subscription ID
+</ParamField>
+
+### Response
+
+Returns 204 No Content on success
+
+### Example Request
+
+```bash
+curl -X DELETE https://pennclubs.com/api/subscriptions/456/ \
+  -H "Authorization: Bearer YOUR_TOKEN"
+```
+
+---
+
+## View Club Subscribers
+
+<CodeGroup>
+```bash GET /api/clubs/{club_code}/subscriptions/
+View list of users subscribed to the club (club officers only)
+```
+</CodeGroup>
+
+### Authentication
+Required - must be club officer or owner
+
+### Path Parameters
+
+<ParamField path="club_code" type="string" required>
+  Club code identifier
+</ParamField>
+
+### Response Fields
+
+<ResponseField name="name" type="string">
+  Subscriber's full name
+</ResponseField>
+
+<ResponseField name="username" type="string">
+  Subscriber's username
+</ResponseField>
+
+<ResponseField name="email" type="string">
+  Subscriber's email address
+</ResponseField>
+
+<ResponseField name="school" type="array">
+  Array of school objects
+</ResponseField>
+
+<ResponseField name="major" type="array">
+  Array of major objects
+</ResponseField>
+
+<ResponseField name="graduation_year" type="integer">
+  Expected graduation year
+</ResponseField>
+
+<ResponseField name="created_at" type="datetime">
+  When user subscribed
+</ResponseField>
+
+### Example Request
+
+```bash
+curl https://pennclubs.com/api/clubs/pppjo/subscriptions/ \
+  -H "Authorization: Bearer YOUR_TOKEN"
+```
+
+### Example Response
+
+```json
+[
+  {
+    "name": "Jane Smith",
+    "username": "janesmith",
+    "email": "jane@upenn.edu",
+    "school": [{"id": 1, "name": "Engineering"}],
+    "major": [{"id": 5, "name": "Computer Science"}],
+    "graduation_year": 2025,
+    "created_at": "2024-09-01T08:30:00Z"
+  }
+]
+```
+
+---
+
+## Favorites vs Subscriptions
+
+### Favorites
+
+- **Purpose**: Personal bookmarking/following clubs
+- **Visibility**: Private to the user
+- **Data Shared**: None - clubs don't see who favorited them
+- **Use Case**: Keep track of clubs you're interested in
+- **Features**: 
+  - Appears in "My Clubs" on user profile
+  - Can export favorited events to calendar
+  - Counts shown on club pages
+
+### Subscriptions
+
+- **Purpose**: Receive email updates from clubs
+- **Visibility**: Club officers can see subscribers
+- **Data Shared**: Name, email, school, major, graduation year
+- **Use Case**: Get recruitment and event notifications
+- **Features**:
+  - Club can send targeted emails
+  - Shows interest/engagement to club
+  - Can be used for application mailing lists
+
+### When to Use Each
+
+- **Favorite**: Want to follow a club privately
+- **Subscribe**: Want to receive emails and show interest to club
+- **Both**: Most engaged members do both

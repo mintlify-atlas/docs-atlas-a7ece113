@@ -1,0 +1,360 @@
+---
+title: Ticketing
+description: Create ticketed events, manage ticket sales, process payments, and track attendance
+---
+
+Penn Clubs includes a complete ticketing system that allows clubs to sell tickets for events, process payments, and manage attendance.
+
+## Creating Ticketed Events
+
+Clubs can create events with paid or free tickets.
+
+### Ticket Configuration
+
+When creating a ticketed event:
+
+<Steps>
+  <Step title="Enable Ticketing">
+    Mark the event as ticketed in event settings
+  </Step>
+  
+  <Step title="Create Ticket Types">
+    Add different ticket types (General Admission, VIP, Student, etc.)
+  </Step>
+  
+  <Step title="Set Pricing">
+    Configure price for each ticket type (supports $0.00 for free tickets)
+  </Step>
+  
+  <Step title="Set Capacity">
+    Limit total tickets available per type
+  </Step>
+  
+  <Step title="Configure Drop Time">
+    Set when tickets become available (optional)
+  </Step>
+</Steps>
+
+## Ticket Types and Pricing
+
+Create multiple ticket types for flexible pricing:
+
+<Card title="General Admission" icon="ticket">
+  Standard tickets available to all students
+</Card>
+
+<Card title="Member Pricing" icon="users">
+  Discounted tickets for club members
+</Card>
+
+<Card title="VIP/Premium" icon="star">
+  Special access tickets with premium pricing
+</Card>
+
+<Card title="Group Tickets" icon="users">
+  Bulk ticket purchases with group discounts
+</Card>
+
+### Ticket Features
+
+- **Price** - Set in dollars and cents (e.g., $15.00)
+- **Group discounts** - Percentage off for buying multiple tickets
+- **Group size** - Minimum tickets needed for discount
+- **Transferable** - Allow or prevent ticket transfers
+- **Buyable** - Control if tickets can be purchased (vs. distributed)
+
+## Ticket Sales
+
+### Purchasing Flow
+
+<Steps>
+  <Step title="Browse Event">
+    Students view event page and see ticket availability
+  </Step>
+  
+  <Step title="Select Tickets">
+    Choose ticket type and quantity (up to order limit)
+  </Step>
+  
+  <Step title="Add to Cart">
+    Tickets held temporarily in user's cart
+  </Step>
+  
+  <Step title="Checkout">
+    Process payment through CyberSource Secure Acceptance
+  </Step>
+  
+  <Step title="Confirmation">
+    Receive email with QR codes and ticket details
+  </Step>
+</Steps>
+
+### Ticket Holds
+
+When tickets are added to cart:
+
+- **Temporary hold** prevents double-booking
+- **Expiration time** releases holds automatically
+- **Hold updates** when cart changes
+- **Automatic cleanup** of expired holds
+
+<Note>
+  Ticket holds typically expire after 10-15 minutes to prevent hoarding and ensure availability.
+</Note>
+
+## Payment Processing
+
+Penn Clubs integrates with CyberSource for secure payment:
+
+### CyberSource Integration
+
+- **PCI-compliant** payment processing
+- **Secure Acceptance** hosted payment forms
+- **Multiple payment methods** (credit/debit cards)
+- **Real-time transaction processing**
+- **Transaction records** for auditing
+
+### Transaction Records
+
+Each purchase creates a transaction record:
+
+- **Transaction ID** - CyberSource reference
+- **Request ID** - Payment request identifier
+- **Transaction UUID** - Internal tracking
+- **Decision** - Accept/Decline/Review
+- **Reason code** - Detailed transaction status
+- **Total amount** - Payment total
+- **Buyer information** - Name, email, phone
+- **Timestamp** - When transaction occurred
+
+<Note>
+  Transaction records are immutable and protected from deletion for financial compliance.
+</Note>
+
+## Cart Management
+
+Each user has a shopping cart:
+
+- **Add tickets** from multiple events
+- **Update quantities** before checkout
+- **Remove items** from cart
+- **View total price** with all tickets
+- **Pending transaction tracking** during checkout
+
+### Cart Features
+
+- **Persistent cart** - Survives page refreshes
+- **Multiple events** - Buy tickets for different events together
+- **Quantity limits** - Respects per-showing order limits
+- **Availability checking** - Validates tickets still available
+
+## Ticket Ownership
+
+After purchase, tickets appear in user's profile:
+
+### My Tickets
+
+- **View all owned tickets** in one place
+- **Filter by upcoming** vs. past events
+- **See ticket details** - type, price, event info
+- **Access QR codes** for entry
+- **Transfer tickets** to other users
+
+### Ticket Display
+
+Tickets show comprehensive information:
+
+- **Event name** and club
+- **Date and time** with timezone
+- **Location** (if available)
+- **Ticket type** (General, VIP, etc.)
+- **Quantity owned** (for group purchases)
+- **QR code** for scanning at entry
+
+<Note>
+  The ticket card interface stacks multiple tickets visually when you own more than one for the same showing.
+</Note>
+
+## QR Codes and Check-In
+
+Each ticket includes a QR code for attendance tracking:
+
+### QR Code Generation
+
+- **Unique ticket ID** embedded in QR code
+- **Links to ticket verification** endpoint
+- **High-quality PNG image** in confirmation email
+- **On-demand generation** in ticket view
+
+### Attendance Tracking
+
+- **Scan QR codes** at event entrance
+- **Mark attendance** automatically
+- **Prevent duplicate scans**
+- **Track attendance stats** per event
+
+<Steps>
+  <Step title="Student Shows QR Code">
+    Display QR code from email or tickets page
+  </Step>
+  
+  <Step title="Scan at Entry">
+    Officer/volunteer scans code with phone
+  </Step>
+  
+  <Step title="Verify Ticket">
+    System validates ticket ID and ownership
+  </Step>
+  
+  <Step title="Mark Attended">
+    Attendance recorded in database
+  </Step>
+</Steps>
+
+## Ticket Transfers
+
+Students can transfer tickets to other Penn students:
+
+### Transfer Process
+
+<Steps>
+  <Step title="Select Ticket">
+    Choose ticket to transfer from owned tickets
+  </Step>
+  
+  <Step title="Enter Recipient">
+    Provide recipient's username or email
+  </Step>
+  
+  <Step title="Confirm Transfer">
+    Verify transfer details
+  </Step>
+  
+  <Step title="Process Transfer">
+    System updates ownership and sends notifications
+  </Step>
+  
+  <Step title="Transfer Record">
+    Creates permanent record of transfer
+  </Step>
+</Steps>
+
+### Transfer Features
+
+- **Transfer records** - Immutable audit trail
+- **Email notifications** - Both parties notified
+- **Sender/receiver tracking** - See transfer history
+- **Transferability control** - Clubs can disable transfers
+
+<Note>
+  Some ticket types may be marked non-transferable by clubs to prevent scalping or maintain attendance control.
+</Note>
+
+## Ticket Availability
+
+Students can see real-time availability:
+
+- **Tickets remaining** per type
+- **Total capacity** of event
+- **Sold out indicators** when capacity reached
+- **"Almost Gone" warnings** when low stock
+
+### Availability Display
+
+Event pages show:
+
+```
+General Admission: 15 tickets available / 50 total
+VIP: 3 tickets available / 10 total
+Student: SOLD OUT
+```
+
+## Drop Time Features
+
+Create hype with scheduled ticket releases:
+
+- **Set drop time** for when tickets become available
+- **Countdown display** shows time until drop
+- **Automatic availability** at drop time
+- **Fair distribution** prevents early purchases
+
+<Note>
+  Drop times are useful for high-demand events where you want to give all students an equal chance to purchase.
+</Note>
+
+## Order Limits
+
+Control purchase quantities:
+
+- **Per-showing limit** - Max tickets per user per showing
+- **Prevents hoarding** of tickets
+- **Default limit** of 10 tickets
+- **Configurable** per event showing
+
+## Email Confirmations
+
+Automatic emails for ticket transactions:
+
+### Purchase Confirmation
+
+- **QR code image** attached
+- **Ticket details** - type, event, time
+- **Total amount paid**
+- **Link to tickets page**
+- **Event information** and location
+
+### Transfer Confirmation
+
+- **Sent to both parties** (sender and receiver)
+- **Transfer details** included
+- **New ticket access** for receiver
+- **Confirmation number** for records
+
+## Analytics for Clubs
+
+Clubs can track ticketing metrics:
+
+- **Total tickets sold** per event
+- **Revenue generated** per event/type
+- **Attendance rates** (tickets sold vs. attended)
+- **Popular ticket types**
+- **Peak purchase times**
+- **Transfer statistics**
+
+## Protected Financial Data
+
+Security and compliance features:
+
+<Card title="Immutable Records" icon="lock">
+  Transaction and transfer records cannot be deleted
+</Card>
+
+<Card title="PCI Compliance" icon="shield">
+  Payment processing follows industry standards
+</Card>
+
+<Card title="Audit Trail" icon="file-text">
+  Complete history of all ticket transactions
+</Card>
+
+<Card title="Secure Storage" icon="database">
+  Encrypted storage of sensitive payment information
+</Card>
+
+<Note>
+  Clubs never see full payment card details - all sensitive data is handled by CyberSource.
+</Note>
+
+## Free Events
+
+Ticketing works for free events too:
+
+- **Set price to $0.00** for free tickets
+- **Skip payment processing**
+- **Still generate QR codes** for attendance
+- **Track RSVPs** and capacity
+- **All features available** except payment
+
+<Note>
+  Free ticketing is perfect for managing capacity at popular events while avoiding payment processing fees.
+</Note>
