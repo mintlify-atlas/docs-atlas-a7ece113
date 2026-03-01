@@ -1,0 +1,106 @@
+{
+  "projectType": "saas",
+  "projectName": "Penn Clubs",
+  "projectDescription": "Penn's official club management and discovery platform for students and organizations",
+  "theme": "maple",
+  "primaryColor": "#1F7BBF",
+  "lightColor": "#5BA4DC",
+  "darkColor": "#155A8A",
+  "navigation": {
+    "tabs": [
+      {
+        "tab": "Documentation",
+        "groups": [
+          {
+            "group": "Get Started",
+            "pages": [
+              "introduction",
+              "quickstart",
+              "installation"
+            ]
+          },
+          {
+            "group": "Features",
+            "pages": [
+              "features/club-discovery",
+              "features/club-management",
+              "features/events",
+              "features/applications",
+              "features/ticketing"
+            ]
+          },
+          {
+            "group": "User Guides",
+            "pages": [
+              "guides/students",
+              "guides/club-admins",
+              "guides/fairs"
+            ]
+          },
+          {
+            "group": "Development",
+            "pages": [
+              "development/setup",
+              "development/architecture",
+              "development/testing",
+              "development/deployment"
+            ]
+          }
+        ]
+      },
+      {
+        "tab": "API Reference",
+        "groups": [
+          {
+            "group": "Overview",
+            "pages": [
+              "api/overview",
+              "api/authentication"
+            ]
+          },
+          {
+            "group": "Endpoints",
+            "pages": [
+              "api/clubs",
+              "api/events",
+              "api/memberships",
+              "api/applications",
+              "api/tickets",
+              "api/favorites"
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "keyFeatures": [
+    "Club discovery and search with filtering",
+    "Club management dashboard",
+    "Event creation and calendar",
+    "Application system for recruitment",
+    "Ticketing and payment processing",
+    "Club fairs and virtual booths",
+    "Email notifications and reminders",
+    "Member and permission management",
+    "Analytics and reporting",
+    "Integration with Penn authentication"
+  ],
+  "publicApiSurface": [
+    "GET /api/clubs/ - List and search clubs",
+    "GET /api/clubs/{code}/ - Get club details",
+    "POST /api/clubs/ - Create a club",
+    "GET /api/events/ - List events",
+    "POST /api/events/ - Create an event",
+    "GET /api/memberships/ - List memberships",
+    "POST /api/memberships/ - Join a club",
+    "GET /api/favorites/ - List favorite clubs",
+    "POST /api/favorites/ - Favorite a club",
+    "GET /api/subscriptions/ - List subscriptions",
+    "POST /api/subscriptions/ - Subscribe to a club",
+    "GET /api/tickets/ - List tickets",
+    "POST /api/tickets/ - Purchase tickets",
+    "GET /api/clubfairs/ - List club fairs",
+    "GET /api/applications/ - List applications",
+    "POST /api/applications/ - Submit application"
+  ]
+}
